@@ -7,11 +7,11 @@ import logging
 import re
 import sys
 from enum import StrEnum
-from typing import Final, List, Protocol
+from typing import Final, List, Protocol, TypedDict
 from uuid import UUID
 
 from chirpstack_api import api as chirpstack_api
-from chirpstack_fuota_client import  ApplicationService, DeviceProfileService, FuotaService, FuotaUtils
+from chirpstack_fuota_client import  ApplicationService, DeviceService, DeviceProfileService, FuotaService, FuotaUtils
 
 from smp import header as smphdr
 from typing_extensions import TypeGuard, override
@@ -19,14 +19,11 @@ from typing_extensions import TypeGuard, override
 from smpclient.exceptions import SMPClientException
 from smpclient.transport import SMPTransport, SMPTransportDisconnected
 
-class SMPChirpstackFuotaAuthenticationError(SMPClientException):
-    """Raised when an SMP Chirpstack FUOTA authentication error occurs."""
+class SMPChirpstackFuotaConnectionError(SMPClientException):
+    """Raised when an SMP Chirpstack FUOTA connection error occurs."""
 
 class SMPChirpstackFuotaTransportException(SMPClientException):
     """Raised when an SMP Chirpstack FUOTA transport error occurs."""
-
-class SMPChirpstackFuotaDeviceNotFound(SMPChirpstackFuotaTransportException):
-    """Raised when an SMP Chirpstack FUOTA device is not found."""
 
 logger = logging.getLogger(__name__)
 
@@ -81,57 +78,110 @@ class LoraBasicsClassNames(StrEnum):
     def list(cls):
         return list(map(lambda c: c.value, cls))
 
+class DeploymentDevice(TypedDict):
+    device_eui: str
+    gen_app_key: str
+
 class SMPChirpstackFuotaTransport(SMPTransport):
     """A Chirpstack Fuota (LORAWAN FUOTA) SMPTransport."""
 
     def __init__(self, mtu: int = 1024,
-                 group_type: LoraBasicsClassNames = LoraBasicsClassNames.CLASS_C,
-                 region: LoraBasicRegionNames = LoraBasicRegionNames.US_915,
+                 multicast_group_type: LoraBasicsClassNames = LoraBasicsClassNames.CLASS_C,
+                 multicast_region: LoraBasicRegionNames = LoraBasicRegionNames.US_915,
                  chirpstack_server_host: str = "localhost",
                  chirpstack_server_port: str = "8080",
                  chirpstack_server_api_token: str = "",
                  chirpstack_server_app_id: str = "",
-                 dev_eui: str = "",
-                 gen_app_key: str = "",
+                 devices: List[DeploymentDevice] = None,
                  chirpstack_fuota_server_host: str = "localhost",
                  chirpstack_fuota_server_port: str = "8070",
-                 chirpstack_fuota_server_api_token: str = "",
                  ) -> None:
         """Initialize the SMP Chirpstack FUOTA transport.
 
         Args:
             mtu: The Maximum Transmission Unit (MTU) in 8-bit bytes.
         """
-        super().__init__(mtu)
-        self._multicast_group_type = FuotaUtils.get_multicast_group_type(group_type)
-        self._multicast_region = FuotaUtils.get_region(region)
+        self._mtu = mtu
+        self._fuota_service = None
+        self._app_service = None
+        if devices is None:
+            devices = []
+        self._multicast_group_type = FuotaUtils.get_multicast_group_type(multicast_group_type)
+        self._multicast_region = FuotaUtils.get_region(multicast_region)
         self._chirpstack_server_host = chirpstack_server_host
         self._chirpstack_server_port = chirpstack_server_port
         self._chirpstack_server_api_token = chirpstack_server_api_token
         self._chirpstack_server_app_id = chirpstack_server_app_id
-        self._dev_eui = dev_eui
-        self._gen_app_key = gen_app_key
+        self._devices = devices
+        self._matched_devices = []
         self._chirpstack_fuota_server_host = chirpstack_fuota_server_host
         self._chirpstack_fuota_server_port = chirpstack_fuota_server_port
-        self._chirpstack_fuota_server_api_token = chirpstack_fuota_server_api_token
 
 
     @override
     async def connect(self, address: str, timeout_s: float) -> None:
-        logger.debug(f"Connecting to {address=}")
-        await self._fuota_service.connect(address)
-        logger.info(f"Connected to {address=}")
+        logger.debug(f"Connecting to chirpstack network server: {self._chirpstack_server_host}:{self._chirpstack_server_port}")
+        try:
+            self._app_service = ApplicationService(self._chirpstack_server_host, self._chirpstack_server_api_token)
+            application = await self._app_service.get(self._chirpstack_server_app_id)
+            if application is None:
+                raise SMPChirpstackFuotaConnectionError(f"Failed to get application {self._chirpstack_server_app_id}")
+            self._fuota_service = FuotaService(self._chirpstack_fuota_server_host, self._chirpstack_server_api_token)
+            device_service = DeviceService(self._chirpstack_server_host, self._chirpstack_server_api_token)
+            self._matched_devices = []
+            for device in self._devices:
+                matched_device = await device_service.get(device["device_eui"])
+                if matched_device is not None:
+                    self._matched_devices.append(device)
+
+            if len(self._matched_devices) == 0:
+                raise SMPChirpstackFuotaConnectionError(f"Failed to get any matching devices")
+
+        except Exception as e:
+            raise SMPChirpstackFuotaConnectionError(f"Failed to Connect with Chirpstack: {str(e)}")
 
     @override
     async def disconnect(self) -> None:
         logger.debug("Disconnecting from transport")
-        self._fuota_service.disconnect()
+        self._fuota_service = None
         logger.info("Disconnected from transport")
 
     @override
     async def send(self, data: bytes) -> None:
         logger.debug(f"Sending {len(data)} B")
-        await self._fuota_service.send(data)
+        for offset in range(0, len(data), self.mtu):
+            deployment_config = FuotaUtils.create_deployment_config(
+                multicast_timeout=9,
+                unicast_timeout=90,
+                fragmentation_fragment_size=64,
+                fragmentation_redundancy=100,
+            )
+
+            # Create the deployment
+            deployment_response = self._fuota_service.create_deployment(
+                application_id=self._chirpstack_server_app_id,
+                devices=[self._devices],
+                multicast_group_type=self._multicast_group_type,
+                multicast_dr=9,
+                multicast_frequency=923300000,
+                multicast_group_id=0,
+                multicast_region=self._multicast_region,
+                request_fragmentation_session_status="AFTER_SESSION_TIMEOUT",
+                payload=data[offset : offset + self.mtu],
+                **deployment_config,
+            )
+
+            deployment_completed = False
+
+            while not deployment_completed:
+                # Get deployment status
+                status_response = self._fuota_service.get_deployment_status(deployment_response.id)
+                if status_response.frag_status_completed_at > 0:
+                    deployment_completed = True
+                await asyncio.sleep(5)
+
+        logger.debug(f"Sent {len(data)} B")
+
 
     @override
     async def receive(self) -> bytes:
@@ -171,5 +221,3 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     def mtu(self) -> int:
         return self._mtu
 
-    @property
-    def max_unencoded_size(self) -> int:
