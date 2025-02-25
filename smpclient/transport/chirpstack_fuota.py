@@ -149,14 +149,13 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     @override
     async def send(self, data: bytes) -> None:
         logger.debug(f"Sending {len(data)} B")
+        deployment_config = FuotaUtils.create_deployment_config(
+            multicast_timeout=9,
+            unicast_timeout=90,
+            fragmentation_fragment_size=64,
+            fragmentation_redundancy=100,
+        )
         for offset in range(0, len(data), self.mtu):
-            deployment_config = FuotaUtils.create_deployment_config(
-                multicast_timeout=9,
-                unicast_timeout=90,
-                fragmentation_fragment_size=64,
-                fragmentation_redundancy=100,
-            )
-
             # Create the deployment
             deployment_response = self._fuota_service.create_deployment(
                 application_id=self._chirpstack_server_app_id,

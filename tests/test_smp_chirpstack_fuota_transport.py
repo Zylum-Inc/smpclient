@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import random
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID
@@ -84,111 +85,64 @@ async def test_connect(mock_device_service, mock_fuota_service, mock_app_service
     mock_device_service_instance.get = AsyncMock(return_value=None)
     with pytest.raises(SMPChirpstackFuotaConnectionError):
         await transport.connect("address", 1.0)
-# def test_MAC_ADDRESS_PATTERN() -> None:
-#     assert MAC_ADDRESS_PATTERN.match("00:00:00:00:00:00")
-#     assert MAC_ADDRESS_PATTERN.match("FF:FF:FF:FF:FF:FF")
-#     assert MAC_ADDRESS_PATTERN.match("00:FF:00:FF:00:FF")
-#     assert MAC_ADDRESS_PATTERN.match("FF:00:FF:00:FF:00")
-#
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00")
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00:00:00")
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00:00:00:00")
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00:00:00:00:00")
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00:0G")
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00:00:0G")
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00:00:00:0G")
-#     assert not MAC_ADDRESS_PATTERN.match("00:00:00:00:00:00:00:00:0G")
-#
-#
-# def test_UUID_PATTERN() -> None:
-#     assert UUID_PATTERN.match("00000000-0000-4000-8000-000000000000")
-#     assert UUID_PATTERN.match("FFFFFFFF-FFFF-4FFF-9FFF-FFFFFFFFFFFF")
-#     assert UUID_PATTERN.match("0000FFFF-0000-4FFF-a000-FFFFFFFFFFFF")
-#     assert UUID_PATTERN.match("FFFF0000-FFFF-4000-bFFF-000000000000")
-#
-#     assert UUID_PATTERN.match(UUID("00000000-0000-4000-8000-000000000000").hex)
-#     assert UUID_PATTERN.match(UUID("FFFFFFFF-FFFF-4FFF-9FFF-FFFFFFFFFFFF").hex)
-#     assert UUID_PATTERN.match(UUID("0000FFFF-0000-4FFF-a000-FFFFFFFFFFFF").hex)
-#     assert UUID_PATTERN.match(UUID("FFFF0000-FFFF-4000-bFFF-000000000000").hex)
-#
-#     assert not UUID_PATTERN.match("00000000-0000-0000-8000-000000000000")
-#     assert not UUID_PATTERN.match("FFFFFFFF-FFFF-1FFF-9FFF-FFFFFFFFFFFF")
-#     assert not UUID_PATTERN.match("0000FFFF-0000-4FFF-c000-FFFFFFFFFFFF")
-#     assert not UUID_PATTERN.match("FFFF0000-FFFF-4000-dFFF-000000000000")
-#
-#
-# def test_SMP_gatt_consts() -> None:
-#     assert SMP_CHARACTERISTIC_UUID == UUID("DA2E7828-FBCE-4E01-AE9E-261174997C48")
-#     assert SMP_SERVICE_UUID == UUID("8D53DC1D-1DB7-4CD3-868B-8A527460AA84")
-#
-#
-# @patch(
-#     "smpclient.transport.ble.BleakScanner.find_device_by_address",
-#     return_value=BLEDevice("address", "name", None, -60),
-# )
-# @patch(
-#     "smpclient.transport.ble.BleakScanner.find_device_by_name",
-#     return_value=BLEDevice("address", "name", None, -60),
-# )
-# @patch("smpclient.transport.ble.BleakClient", new=MockBleakClient)
-# @pytest.mark.asyncio
-# async def test_connect(
-#     mock_find_device_by_name: MagicMock,
-#     mock_find_device_by_address: MagicMock,
-# ) -> None:
-#     # assert that it searches by name if MAC or UUID is not provided
-#     await SMPBLETransport().connect("device name", 1.0)
-#     mock_find_device_by_name.assert_called_once_with("device name")
-#     mock_find_device_by_name.reset_mock()
-#
-#     # assert that it searches by MAC if MAC is provided
-#     await SMPBLETransport().connect("00:00:00:00:00:00", 1.0)
-#     mock_find_device_by_address.assert_called_once_with("00:00:00:00:00:00", timeout=1.0)
-#     mock_find_device_by_address.reset_mock()
-#
-#     # assert that it searches by UUID if UUID is provided
-#     await SMPBLETransport().connect(UUID("00000000-0000-4000-8000-000000000000").hex, 1.0)
-#     mock_find_device_by_address.assert_called_once_with(
-#         "00000000000040008000000000000000", timeout=1.0
-#     )
-#     mock_find_device_by_address.reset_mock()
-#
-#     # assert that it raises an exception if the device is not found
-#     mock_find_device_by_address.return_value = None
-#     with pytest.raises(SMPBLETransportDeviceNotFound):
-#         await SMPBLETransport().connect("00:00:00:00:00:00", 1.0)
-#     mock_find_device_by_address.reset_mock()
-#
-#     # assert that connect is awaited
-#     t = SMPBLETransport()
-#     await t.connect("name", 1.0)
-#     t._client = cast(MagicMock, t._client)
-#     t._client.reset_mock()
-#     await t.connect("name", 1.0)
-#     t._client.connect.assert_awaited_once_with()
-#
-#     # these are hard to mock now because the _client is created in the connect method
-#     # reenable these after the SMPTransport Protocol is updated to take address
-#     # at initialization rather than in the connect method - a BREAKING CHANGE
-#
-#     # # assert that the SMP characteristic is checked
-#     # t._client.services.get_characteristic.assert_called_once_with(SMP_CHARACTERISTIC_UUID)
-#
-#     # # assert that an exception is raised if the SMP characteristic is not found
-#     # t._client.services.get_characteristic.return_value = None
-#     # with pytest.raises(SMPBLETransportNotSMPServer):
-#     #     await t.connect("name", 1.0)
-#     # t._client.reset_mock()
-#
-#     # # assert that the SMP characteristic is saved
-#     # m = MagicMock()
-#     # t._client.services.get_characteristic.return_value = m
-#     # await t.connect("name", 1.0)
-#     # assert t._smp_characteristic is m
-#
-#     # assert that SMP characteristic notifications are started
-#     t._client.start_notify.assert_called_once_with(SMP_CHARACTERISTIC_UUID, t._notify_callback)
-#
+
+import pytest
+from unittest.mock import patch, AsyncMock, MagicMock
+from smpclient.transport.chirpstack_fuota import SMPChirpstackFuotaTransport, SMPChirpstackFuotaConnectionError
+
+@pytest.mark.asyncio
+@patch("smpclient.transport.chirpstack_fuota.FuotaService.create_deployment")
+@patch("smpclient.transport.chirpstack_fuota.FuotaService.get_deployment_status")
+@patch("smpclient.transport.chirpstack_fuota.ApplicationService")
+@patch("smpclient.transport.chirpstack_fuota.DeviceService")
+async def test_send(mock_device_service, mock_app_service, mock_get_deployment_status, mock_create_deployment):
+    # Arrange
+    mock_app_service_instance = mock_app_service.return_value
+    mock_device_service_instance = mock_device_service.return_value
+
+    transport = SMPChirpstackFuotaTransport(
+        chirpstack_server_host="localhost",
+        chirpstack_server_api_token="test_token",
+        chirpstack_server_app_id="test_app_id",
+        devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
+        chirpstack_fuota_server_host="localhost",
+    )
+
+    # Mock the connect method dependencies
+    mock_app_service_instance.get = AsyncMock(return_value=MagicMock())
+    mock_device_service_instance.get = AsyncMock(return_value=MagicMock())
+
+    # Call the connect method
+    await transport.connect("address", 1.0)
+
+    deployment_response = MagicMock()
+    deployment_response.id = "valid_id"
+    mock_create_deployment.return_value = deployment_response
+
+    status_response = MagicMock()
+    status_response.frag_status_completed_at = 1
+    mock_get_deployment_status.return_value = status_response
+
+    # Act
+    await transport.send(bytes([random.randint(0, 255) for _ in range(2500)]))
+
+    # Assert
+    mock_create_deployment.assert_called()
+    assert mock_create_deployment.call_count == 3
+    mock_get_deployment_status.assert_called_with("valid_id")
+    assert mock_get_deployment_status.call_count == 3
+
+    # Verify the deployment_config
+    called_args = mock_create_deployment.call_args[1]
+    expected_deployment_config = {
+        "multicast_timeout": 9,
+        "unicast_timeout": 90,
+        "fragmentation_fragment_size": 64,
+        "fragmentation_redundancy": 100,
+    }
+    for key, value in expected_deployment_config.items():
+        assert called_args[key] == value
+
 #
 # @pytest.mark.asyncio
 # async def test_disconnect() -> None:
