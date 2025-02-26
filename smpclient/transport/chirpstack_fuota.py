@@ -113,23 +113,38 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._matched_devices = []
         self._chirpstack_fuota_server_addr = chirpstack_fuota_server_addr
 
+    async def verify_app_id(self, app_id: str) -> bool:
+        verified = False
+        try:
+            self._app_service = ApplicationService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
+            application = await self._app_service.get(app_id)
+            if application is not None:
+                verified = True
+        except Exception as e:
+            logger.error(f"Failed to verify app id {app_id}: {str(e)}")
+        return verified
+
+    async def get_matched_devices(self) -> List[DeploymentDevice]:
+        matched_devices = []
+        try:
+            device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
+            for device in self._devices:
+                matched_device = await device_service.get(device["device_eui"])
+                if matched_device is not None:
+                    matched_devices.append(device)
+        except Exception as e:
+            logger.error(f"Failed to get matched devices: {str(e)}")
+
+        return matched_devices
 
     @override
     async def connect(self, address: str, timeout_s: float) -> None:
         logger.debug(f"Connecting to chirpstack network server: {self._chirpstack_server_addr}")
         try:
-            self._app_service = ApplicationService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
-            application = await self._app_service.get(self._chirpstack_server_app_id)
-            if application is None:
+            if not await self.verify_app_id(self._chirpstack_server_app_id):
                 raise SMPChirpstackFuotaConnectionError(f"Failed to get application {self._chirpstack_server_app_id}")
             self._fuota_service = FuotaService(self._chirpstack_fuota_server_addr, self._chirpstack_server_api_token)
-            device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
-            self._matched_devices = []
-            for device in self._devices:
-                matched_device = await device_service.get(device["device_eui"])
-                if matched_device is not None:
-                    self._matched_devices.append(device)
-
+            self._matched_devices = await self.get_matched_devices()
             if len(self._matched_devices) == 0:
                 raise SMPChirpstackFuotaConnectionError(f"Failed to get any matching devices")
 
