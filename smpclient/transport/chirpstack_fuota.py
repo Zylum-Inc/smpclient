@@ -88,13 +88,11 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     def __init__(self, mtu: int = 1024,
                  multicast_group_type: LoraBasicsClassNames = LoraBasicsClassNames.CLASS_C,
                  multicast_region: LoraBasicRegionNames = LoraBasicRegionNames.US_915,
-                 chirpstack_server_host: str = "localhost",
-                 chirpstack_server_port: str = "8080",
+                 chirpstack_server_addr: str = "localhost:8080",
                  chirpstack_server_api_token: str = "",
                  chirpstack_server_app_id: str = "",
                  devices: List[DeploymentDevice] = None,
-                 chirpstack_fuota_server_host: str = "localhost",
-                 chirpstack_fuota_server_port: str = "8070",
+                 chirpstack_fuota_server_addr: str = "localhost:8070",
                  ) -> None:
         """Initialize the SMP Chirpstack FUOTA transport.
 
@@ -108,26 +106,24 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             devices = []
         self._multicast_group_type = FuotaUtils.get_multicast_group_type(multicast_group_type)
         self._multicast_region = FuotaUtils.get_region(multicast_region)
-        self._chirpstack_server_host = chirpstack_server_host
-        self._chirpstack_server_port = chirpstack_server_port
+        self._chirpstack_server_addr = chirpstack_server_addr
         self._chirpstack_server_api_token = chirpstack_server_api_token
         self._chirpstack_server_app_id = chirpstack_server_app_id
         self._devices = devices
         self._matched_devices = []
-        self._chirpstack_fuota_server_host = chirpstack_fuota_server_host
-        self._chirpstack_fuota_server_port = chirpstack_fuota_server_port
+        self._chirpstack_fuota_server_addr = chirpstack_fuota_server_addr
 
 
     @override
     async def connect(self, address: str, timeout_s: float) -> None:
-        logger.debug(f"Connecting to chirpstack network server: {self._chirpstack_server_host}:{self._chirpstack_server_port}")
+        logger.debug(f"Connecting to chirpstack network server: {self._chirpstack_server_addr}")
         try:
-            self._app_service = ApplicationService(self._chirpstack_server_host, self._chirpstack_server_api_token)
+            self._app_service = ApplicationService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
             application = await self._app_service.get(self._chirpstack_server_app_id)
             if application is None:
                 raise SMPChirpstackFuotaConnectionError(f"Failed to get application {self._chirpstack_server_app_id}")
-            self._fuota_service = FuotaService(self._chirpstack_fuota_server_host, self._chirpstack_server_api_token)
-            device_service = DeviceService(self._chirpstack_server_host, self._chirpstack_server_api_token)
+            self._fuota_service = FuotaService(self._chirpstack_fuota_server_addr, self._chirpstack_server_api_token)
+            device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
             self._matched_devices = []
             for device in self._devices:
                 matched_device = await device_service.get(device["device_eui"])

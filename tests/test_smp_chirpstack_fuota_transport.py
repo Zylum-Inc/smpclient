@@ -33,13 +33,11 @@ def test_default_constructor() -> None:
     assert t.mtu == 1024
     assert t._multicast_group_type == FuotaUtils.get_multicast_group_type(LoraBasicsClassNames.CLASS_C)
     assert t._multicast_region == FuotaUtils.get_region(LoraBasicRegionNames.US_915)
-    assert t._chirpstack_server_host == "localhost"
-    assert t._chirpstack_server_port == "8080"
+    assert t._chirpstack_server_addr == "localhost:8080"
     assert t._chirpstack_server_api_token == ""
     assert t._chirpstack_server_app_id == ""
     assert t._devices == []
-    assert t._chirpstack_fuota_server_host == "localhost"
-    assert t._chirpstack_fuota_server_port == "8070"
+    assert t._chirpstack_fuota_server_addr == "localhost:8070"
 
 def test_class_c_constructor() -> None:
     t = SMPChirpstackFuotaTransport(mtu=2048, multicast_group_type=LoraBasicsClassNames.CLASS_C)
@@ -58,21 +56,21 @@ async def test_connect(mock_device_service, mock_fuota_service, mock_app_service
     mock_device_service_instance = mock_device_service.return_value
 
     transport = SMPChirpstackFuotaTransport(
-        chirpstack_server_host="localhost",
+        chirpstack_server_addr="localhost:8080",
         chirpstack_server_api_token="test_token",
         chirpstack_server_app_id="test_app_id",
         devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
-        chirpstack_fuota_server_host="localhost",
+        chirpstack_fuota_server_addr="localhost:8070",
     )
 
     # Success case
     mock_app_service_instance.get = AsyncMock(return_value=MagicMock())
     mock_device_service_instance.get = AsyncMock(return_value=MagicMock())
     await transport.connect("address", 1.0)
-    mock_app_service.assert_called_once_with("localhost", "test_token")
+    mock_app_service.assert_called_once_with("localhost:8080", "test_token")
     mock_app_service_instance.get.assert_called_once_with("test_app_id")
-    mock_fuota_service.assert_called_once_with("localhost", "test_token")
-    mock_device_service.assert_called_once_with("localhost", "test_token")
+    mock_fuota_service.assert_called_once_with("localhost:8070", "test_token")
+    mock_device_service.assert_called_once_with("localhost:8080", "test_token")
     mock_device_service_instance.get.assert_called_once_with("test_eui")
 
     # Failure case: Application not found
@@ -101,11 +99,11 @@ async def test_send(mock_device_service, mock_app_service, mock_get_deployment_s
     mock_device_service_instance = mock_device_service.return_value
 
     transport = SMPChirpstackFuotaTransport(
-        chirpstack_server_host="localhost",
+        chirpstack_server_addr="localhost:8080",
         chirpstack_server_api_token="test_token",
         chirpstack_server_app_id="test_app_id",
         devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
-        chirpstack_fuota_server_host="localhost",
+        chirpstack_fuota_server_addr="localhost:8070",
     )
 
     # Mock the connect method dependencies
