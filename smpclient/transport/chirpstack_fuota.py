@@ -129,7 +129,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         try:
             device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
             for device in self._devices:
-                matched_device = await device_service.get(device["device_eui"])
+                matched_device = device_service.get(device["device_eui"])
                 if matched_device is not None:
                     matched_devices.append(device)
         except Exception as e:
