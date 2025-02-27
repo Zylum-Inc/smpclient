@@ -46,6 +46,29 @@ def test_class_c_constructor() -> None:
 
 @pytest.mark.asyncio
 @patch("smpclient.transport.chirpstack_fuota.ApplicationService")
+async def test_verify_app_id(mock_app_service):
+    # Arrange
+    mock_app_service_instance = mock_app_service.return_value
+    transport = SMPChirpstackFuotaTransport(
+        chirpstack_server_addr="localhost:8080",
+        chirpstack_server_api_token="test_token",
+        chirpstack_server_app_id="test_app_id",
+        devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
+        chirpstack_fuota_server_addr="localhost:8070",
+    )
+
+    # Success case
+    mock_app_service_instance.get = MagicMock()
+    result = await transport.verify_app_id("test_app_id")
+    assert result is True
+
+    # Failure case
+    mock_app_service_instance.get = MagicMock(side_effect=Exception("Failed to get application"))
+    result = await transport.verify_app_id("invalid_app_id")
+    assert result is False
+
+@pytest.mark.asyncio
+@patch("smpclient.transport.chirpstack_fuota.ApplicationService")
 @patch("smpclient.transport.chirpstack_fuota.FuotaService")
 @patch("smpclient.transport.chirpstack_fuota.DeviceService")
 async def test_connect(mock_device_service, mock_fuota_service, mock_app_service):
@@ -63,7 +86,7 @@ async def test_connect(mock_device_service, mock_fuota_service, mock_app_service
     )
 
     # Success case
-    mock_app_service_instance.get = AsyncMock(return_value=MagicMock())
+    mock_app_service_instance.get = MagicMock()
     mock_device_service_instance.get = AsyncMock(return_value=MagicMock())
     mock_device_service_instance.get.return_value = MagicMock()  # Ensure a valid device is returned
 
@@ -88,7 +111,7 @@ async def test_send(mock_device_service, mock_app_service, mock_get_deployment_s
     )
 
     # Mock the connect method dependencies
-    mock_app_service_instance.get = AsyncMock(return_value=MagicMock())
+    mock_app_service_instance.get = MagicMock()
     mock_device_service_instance.get = AsyncMock(return_value=MagicMock())
     mock_device_service_instance.get.return_value = MagicMock()  # Ensure a valid device is returned
 
@@ -122,6 +145,7 @@ async def test_send(mock_device_service, mock_app_service, mock_get_deployment_s
     }
     for key, value in expected_deployment_config.items():
         assert called_args[key] == value
+
 
 #
 # @pytest.mark.asyncio

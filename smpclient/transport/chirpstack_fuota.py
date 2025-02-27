@@ -117,7 +117,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         verified = False
         try:
             self._app_service = ApplicationService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
-            application = await self._app_service.get(app_id)
+            application = self._app_service.get(app_id)
             if application is not None:
                 verified = True
         except Exception as e:
