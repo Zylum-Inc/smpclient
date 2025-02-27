@@ -99,6 +99,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         Args:
             mtu: The Maximum Transmission Unit (MTU) in 8-bit bytes.
         """
+        self._timeout_s = 5.0
         self._mtu = mtu
         self._fuota_service = None
         self._app_service = None
@@ -131,7 +132,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             for device in self._devices:
                 matched_device = device_service.get(device["device_eui"])
                 if matched_device is not None:
-                    matched_devices.append(device)
+                    matched_devices.append(matched_device[0])
         except Exception as e:
             logger.error(f"Failed to get matched devices: {str(e)}")
 
@@ -139,6 +140,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
     @override
     async def connect(self, address: str, timeout_s: float) -> None:
+        self._timeout_s = timeout_s
         logger.debug(f"Connecting to chirpstack network server: {self._chirpstack_server_addr}")
         try:
             if not await self.verify_app_id(self._chirpstack_server_app_id):
@@ -167,28 +169,41 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             fragmentation_redundancy=100,
         )
         for offset in range(0, len(data), self.mtu):
-            # Create the deployment
-            deployment_response = self._fuota_service.create_deployment(
-                application_id=self._chirpstack_server_app_id,
-                devices=[self._devices],
-                multicast_group_type=self._multicast_group_type,
-                multicast_dr=9,
-                multicast_frequency=923300000,
-                multicast_group_id=0,
-                multicast_region=self._multicast_region,
-                request_fragmentation_session_status="AFTER_SESSION_TIMEOUT",
-                payload=data[offset : offset + self.mtu],
-                **deployment_config,
-            )
+            logger.debug(f"Creating deployment for offset {offset}")
+
+            try:
+                # Create the deployment
+                deployment_response = self._fuota_service.create_deployment(
+                    application_id=self._chirpstack_server_app_id,
+                    devices=[self._devices],
+                    multicast_group_type=self._multicast_group_type,
+                    multicast_dr=9,
+                    multicast_frequency=923300000,
+                    multicast_group_id=0,
+                    multicast_region=self._multicast_region,
+                    request_fragmentation_session_status="AFTER_SESSION_TIMEOUT",
+                    payload=data[offset : offset + self.mtu],
+                    **deployment_config,
+                )
+            except Exception as e:
+                raise SMPChirpstackFuotaTransportException(f"Failed create deployment for offset {offset}: {str(e)}")
+
+            logger.debug(f"Created FUOTA deployment with ID: {deployment_response.id}")
 
             deployment_completed = False
+
+            # logger.debug(f"Sleeping for 30 seconds")
+            # await asyncio.sleep(30)
+
+            logger.debug(f"Getting deployment status")
 
             while not deployment_completed:
                 # Get deployment status
                 status_response = self._fuota_service.get_deployment_status(deployment_response.id)
+                logger.debug(f"Deployment status: {status_response}")
                 if status_response.frag_status_completed_at > 0:
                     deployment_completed = True
-                await asyncio.sleep(5)
+                await asyncio.sleep(self._timeout_s)
 
         logger.debug(f"Sent {len(data)} B")
 
