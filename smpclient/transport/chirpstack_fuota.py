@@ -130,10 +130,10 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         try:
             device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
             for device in self._devices:
-                matched_device = device_service.get(device["device_eui"])
-                logger.debug(f"Matched device: {matched_device}")
-                if matched_device is not None:
-                    matched_devices.append(matched_device)
+                device_response = device_service.get(device["device_eui"])
+                if device_response is not None:
+                    logger.debug(f"Matched device: {device_response['device']}")
+                    matched_devices.append(device)
         except Exception as e:
             logger.error(f"Failed to get matched devices: {str(e)}")
 
