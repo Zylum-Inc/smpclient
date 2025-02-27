@@ -82,7 +82,7 @@ async def test_get_matched_devices(mock_device_service):
 
     # Mock the get method to return a valid device
     mock_device_service_instance.get = MagicMock()
-    mock_device_service_instance.get.return_value = [DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")]
+    mock_device_service_instance.get.return_value = DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")
 
     # Act
     matched_devices = await transport.get_matched_devices()
@@ -114,7 +114,7 @@ async def test_connect(mock_device_service, mock_fuota_service, mock_app_service
     # Success case
     mock_app_service_instance.get = MagicMock()
     mock_device_service_instance.get = MagicMock()
-    mock_device_service_instance.get.return_value = [DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")]
+    mock_device_service_instance.get.return_value = DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")
 
     await transport.connect("address", 1.0)
 
@@ -139,7 +139,7 @@ async def test_send(mock_device_service, mock_app_service, mock_get_deployment_s
     # Mock the connect method dependencies
     mock_app_service_instance.get = MagicMock()
     mock_device_service_instance.get = MagicMock()
-    mock_device_service_instance.get.return_value = [DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")]  # Ensure a valid device is returned
+    mock_device_service_instance.get.return_value = DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")  # Ensure a valid device is returned
 
     # Call the connect method
     await transport.connect("address", 1.0)
