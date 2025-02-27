@@ -53,7 +53,7 @@ async def test_verify_app_id(mock_app_service):
         chirpstack_server_addr="localhost:8080",
         chirpstack_server_api_token="test_token",
         chirpstack_server_app_id="test_app_id",
-        devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
+        devices=[{"dev_eui": "test_eui", "gen_app_key": "test_key"}],
         chirpstack_fuota_server_addr="localhost:8070",
     )
 
@@ -76,20 +76,20 @@ async def test_get_matched_devices(mock_device_service):
         chirpstack_server_addr="localhost:8080",
         chirpstack_server_api_token="test_token",
         chirpstack_server_app_id="test_app_id",
-        devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
+        devices=[{"dev_eui": "test_eui", "gen_app_key": "test_key"}],
         chirpstack_fuota_server_addr="localhost:8070",
     )
 
     # Mock the get method to return a valid device
     mock_device_service_instance.get = MagicMock()
-    mock_device_service_instance.get.return_value = {"device": DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")}
+    mock_device_service_instance.get.return_value = {"device": DeploymentDevice(dev_eui="test_eui", gen_app_key="test_key")}
 
     # Act
     matched_devices = await transport.get_matched_devices()
 
     # Assert
     assert len(matched_devices) == 1
-    assert matched_devices[0]["device_eui"] == "test_eui"
+    assert matched_devices[0]["dev_eui"] == "test_eui"
     assert matched_devices[0]["gen_app_key"] == "test_key"
 
 
@@ -107,14 +107,14 @@ async def test_connect(mock_device_service, mock_fuota_service, mock_app_service
         chirpstack_server_addr="localhost:8080",
         chirpstack_server_api_token="test_token",
         chirpstack_server_app_id="test_app_id",
-        devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
+        devices=[{"dev_eui": "test_eui", "gen_app_key": "test_key"}],
         chirpstack_fuota_server_addr="localhost:8070",
     )
 
     # Success case
     mock_app_service_instance.get = MagicMock()
     mock_device_service_instance.get = MagicMock()
-    mock_device_service_instance.get.return_value = {"device": DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")}
+    mock_device_service_instance.get.return_value = {"device": DeploymentDevice(dev_eui="test_eui", gen_app_key="test_key")}
 
     await transport.connect("address", 1.0)
 
@@ -132,14 +132,14 @@ async def test_send(mock_device_service, mock_app_service, mock_get_deployment_s
         chirpstack_server_addr="localhost:8080",
         chirpstack_server_api_token="test_token",
         chirpstack_server_app_id="test_app_id",
-        devices=[{"device_eui": "test_eui", "gen_app_key": "test_key"}],
+        devices=[{"dev_eui": "test_eui", "gen_app_key": "test_key"}],
         chirpstack_fuota_server_addr="localhost:8070",
     )
 
     # Mock the connect method dependencies
     mock_app_service_instance.get = MagicMock()
     mock_device_service_instance.get = MagicMock()
-    mock_device_service_instance.get.return_value = {"device": DeploymentDevice(device_eui="test_eui", gen_app_key="test_key")}  # Ensure a valid device is returned
+    mock_device_service_instance.get.return_value = {"device": DeploymentDevice(dev_eui="test_eui", gen_app_key="test_key")}  # Ensure a valid device is returned
 
     # Call the connect method
     await transport.connect("address", 1.0)

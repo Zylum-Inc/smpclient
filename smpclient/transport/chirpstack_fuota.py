@@ -79,7 +79,7 @@ class LoraBasicsClassNames(StrEnum):
         return list(map(lambda c: c.value, cls))
 
 class DeploymentDevice(TypedDict):
-    device_eui: str
+    dev_eui: str
     gen_app_key: str
 
 class SMPChirpstackFuotaTransport(SMPTransport):
@@ -130,9 +130,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         try:
             device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
             for device in self._devices:
-                device_response = device_service.get(device["device_eui"])
+                device_response = device_service.get(device["dev_eui"])
+                logger.debug(f"Device response: {device_response} type: {type(device_response)}")
                 if device_response is not None:
-                    logger.debug(f"Matched device: {device_response['device']}")
                     matched_devices.append(device)
         except Exception as e:
             logger.error(f"Failed to get matched devices: {str(e)}")
@@ -176,7 +176,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 # Create the deployment
                 deployment_response = self._fuota_service.create_deployment(
                     application_id=self._chirpstack_server_app_id,
-                    devices=[self._devices],
+                    devices=self._matched_devices,
                     multicast_group_type=self._multicast_group_type,
                     multicast_dr=9,
                     multicast_frequency=923300000,
