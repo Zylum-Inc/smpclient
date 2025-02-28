@@ -6,6 +6,8 @@ import asyncio
 import logging
 import re
 import sys
+import time
+
 from enum import StrEnum
 from typing import Final, List, Protocol, TypedDict
 from uuid import UUID
@@ -91,6 +93,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                  chirpstack_server_app_id: str = "",
                  devices: List[DeploymentDevice] = None,
                  chirpstack_fuota_server_addr: str = "localhost:8070",
+                 send_max_duration_s: float = 3600.0,
                  ) -> None:
         """Initialize the SMP Chirpstack FUOTA transport.
 
@@ -98,6 +101,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             mtu: The Maximum Transmission Unit (MTU) in 8-bit bytes.
         """
         self._timeout_s = 5.0
+        self._send_max_duration_s = send_max_duration_s
+        self._send_start_time = 0.0
+        self._send_end_time = 0.0
         self._mtu = mtu
         self._fuota_service = None
         self._app_service = None
@@ -160,6 +166,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
     @override
     async def send(self, data: bytes) -> None:
+        self._send_start_time = time.time()
         logger.debug(f"Sending {len(data)} B")
         deployment_config = FuotaUtils.create_deployment_config(
             multicast_timeout=9,
@@ -200,8 +207,11 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 # Get deployment status
                 status_response = self._fuota_service.get_deployment_status(deployment_response.id)
                 logger.debug(f"Deployment status: {status_response}")
-                if status_response.frag_status_completed_at > 0:
+                if status_response.frag_status_completed_at and status_response.frag_status_completed_at.seconds > 0:
                     deployment_completed = True
+                else:
+                    if time.time() - self._send_start_time > self._send_max_duration_s:
+                        raise SMPChirpstackFuotaTransportException(f"Deployment timeout exceeded")
                 await asyncio.sleep(self._timeout_s)
 
         logger.debug(f"Sent {len(data)} B")

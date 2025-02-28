@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import time
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID
@@ -11,6 +12,7 @@ from uuid import UUID
 import pytest
 
 from chirpstack_fuota_client.api.fuota import FuotaService, FuotaUtils
+from google.protobuf.internal.well_known_types import Timestamp
 
 from smpclient.requests.os_management import EchoWrite
 from smpclient.transport.chirpstack_fuota import (
@@ -149,7 +151,8 @@ async def test_send(mock_device_service, mock_app_service, mock_get_deployment_s
     mock_create_deployment.return_value = deployment_response
 
     status_response = MagicMock()
-    status_response.frag_status_completed_at = 1
+    status_response.frag_status_completed_at.seconds = int(time.time())
+    status_response.frag_status_completed_at.nanos = 0
     mock_get_deployment_status.return_value = status_response
 
     # Act
