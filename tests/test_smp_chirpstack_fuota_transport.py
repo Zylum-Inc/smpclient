@@ -15,7 +15,7 @@ from chirpstack_fuota_client.api.fuota import FuotaService, FuotaUtils
 from smpclient.requests.os_management import EchoWrite
 from smpclient.transport.chirpstack_fuota import (
     LoraBasicsClassNames,
-    LoraBasicRegionNames,
+    ChirpstackFuotaRegionNames,
     DeploymentDevice,
     SMPChirpstackFuotaTransport,
     SMPChirpstackFuotaConnectionError
@@ -31,8 +31,8 @@ class MockChirpstackFuotaService:
 def test_default_constructor() -> None:
     t = SMPChirpstackFuotaTransport()
     assert t.mtu == 1024
-    assert t._multicast_group_type == FuotaUtils.get_multicast_group_type(LoraBasicsClassNames.CLASS_C)
-    assert t._multicast_region == FuotaUtils.get_region(LoraBasicRegionNames.US_915)
+    assert t._multicast_group_type == LoraBasicsClassNames.CLASS_C
+    assert t._multicast_region == ChirpstackFuotaRegionNames.US_915
     assert t._chirpstack_server_addr == "localhost:8080"
     assert t._chirpstack_server_api_token == ""
     assert t._chirpstack_server_app_id == ""
@@ -42,7 +42,7 @@ def test_default_constructor() -> None:
 def test_class_c_constructor() -> None:
     t = SMPChirpstackFuotaTransport(mtu=2048, multicast_group_type=LoraBasicsClassNames.CLASS_C)
     assert t.mtu == 2048
-    assert t._multicast_group_type == FuotaUtils.get_multicast_group_type(LoraBasicsClassNames.CLASS_C)
+    assert t._multicast_group_type == LoraBasicsClassNames.CLASS_C
 
 @pytest.mark.asyncio
 @patch("smpclient.transport.chirpstack_fuota.ApplicationService")

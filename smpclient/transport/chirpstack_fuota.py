@@ -49,20 +49,18 @@ logger = logging.getLogger(__name__)
 
 """
 
-class LoraBasicRegionNames(StrEnum):
-    EU_868 = "EU_868"
-    AS_923_GRP1 = "AS_923_GRP1"
-    US_915 = "US_915"
-    AU_915 = "AU_915"
-    CN_470 = "CN_470"
-    WW2G4 = "WW2G4"
-    AS_923_GRP2 = "AS_923_GRP2"
-    AS_923_GRP3 = "AS_923_GRP3"
-    IN_865 = "IN_865"
-    KR_920 = "KR_920"
-    RU_864 = "RU_864"
-    CN_470_RP_1_0 = "CN_470_RP_1_0"
-    AS_923_GRP4 = "AS_923_GRP4"
+class ChirpstackFuotaRegionNames(StrEnum):
+    EU_868 = "EU868"
+    AS_923_GRP1 = "AS923"
+    US_915 = "US915"
+    AU_915 = "AU915"
+    CN_470 = "CN470"
+    AS_923_GRP2 = "AS923_2"
+    AS_923_GRP3 = "AS923_3"
+    IN_865 = "IN865"
+    KR_920 = "KR920"
+    RU_864 = "RU864"
+    AS_923_GRP4 = "AS923_4"
 
     @classmethod
     def list(cls):
@@ -87,7 +85,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
     def __init__(self, mtu: int = 1024,
                  multicast_group_type: LoraBasicsClassNames = LoraBasicsClassNames.CLASS_C,
-                 multicast_region: LoraBasicRegionNames = LoraBasicRegionNames.US_915,
+                 multicast_region: ChirpstackFuotaRegionNames = ChirpstackFuotaRegionNames.US_915,
                  chirpstack_server_addr: str = "localhost:8080",
                  chirpstack_server_api_token: str = "",
                  chirpstack_server_app_id: str = "",
@@ -105,8 +103,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._app_service = None
         if devices is None:
             devices = []
-        self._multicast_group_type = FuotaUtils.get_multicast_group_type(multicast_group_type)
-        self._multicast_region = FuotaUtils.get_region(multicast_region)
+        self._multicast_group_type = multicast_group_type
+        self._multicast_region = multicast_region
         self._chirpstack_server_addr = chirpstack_server_addr
         self._chirpstack_server_api_token = chirpstack_server_api_token
         self._chirpstack_server_app_id = chirpstack_server_app_id
