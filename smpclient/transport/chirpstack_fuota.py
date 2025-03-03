@@ -205,9 +205,30 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             while not deployment_completed:
                 # Get deployment status
-                status_response = self._fuota_service.get_deployment_status(deployment_response.id)
-                logger.debug(f"Deployment status: {status_response}")
-                if status_response.frag_status_completed_at and status_response.frag_status_completed_at.seconds > 0:
+                try:
+                    deployment_status = self._fuota_service.get_deployment_status(deployment_response.id)
+                    status_response = FuotaUtils.serialize_deployment_status(deployment_status, "epoch")
+
+                    # Get device logs
+                    for device_status in status_response["device_status"]:
+                        try:
+                            device_logs = self._fuota_service.get_deployment_device_logs(
+                                deployment_id=deployment_response.id,
+                                dev_eui=device_status["dev_eui"]
+                            )
+                            if device_logs and device_logs.logs:
+                                device_status["logs"] = FuotaUtils.serialize_device_logs(device_logs, "epoch")
+
+                        except Exception as e:
+                            print(f"Error getting device logs for {device_status['dev_eui']}: {str(e)}")
+                            device_status["logs_error"] = str(e)
+
+
+                except Exception as e:
+                    raise SMPChirpstackFuotaTransportException(f"Failed to get deployment status: {str(e)}")
+
+                logger.debug(f"status_response: {status_response}")
+                if status_response["frag_status_completed_at"] > 0:
                     deployment_completed = True
                 else:
                     if time.time() - self._send_start_time > self._send_max_duration_s:

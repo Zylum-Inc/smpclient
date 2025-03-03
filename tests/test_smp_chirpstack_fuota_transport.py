@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import UUID
 
 import pytest
+import logging
 
 from chirpstack_fuota_client.api.fuota import FuotaService, FuotaUtils
 from google.protobuf.internal.well_known_types import Timestamp
@@ -23,6 +24,7 @@ from smpclient.transport.chirpstack_fuota import (
     SMPChirpstackFuotaConnectionError
 )
 
+logging.basicConfig(level=logging.DEBUG)
 
 class MockChirpstackFuotaService:
     def __new__(cls, *args, **kwargs) -> "MockChirpstackFuotaService":  # type: ignore
@@ -121,11 +123,13 @@ async def test_connect(mock_device_service, mock_fuota_service, mock_app_service
     await transport.connect("address", 1.0)
 
 @pytest.mark.asyncio
+@patch("smpclient.transport.chirpstack_fuota.FuotaService.get_deployment_device_logs")
 @patch("smpclient.transport.chirpstack_fuota.FuotaService.create_deployment")
 @patch("smpclient.transport.chirpstack_fuota.FuotaService.get_deployment_status")
+@patch("smpclient.transport.chirpstack_fuota.FuotaService.__init__", return_value=None)
 @patch("smpclient.transport.chirpstack_fuota.ApplicationService")
 @patch("smpclient.transport.chirpstack_fuota.DeviceService")
-async def test_send(mock_device_service, mock_app_service, mock_get_deployment_status, mock_create_deployment):
+async def test_send(mock_device_service, mock_app_service, mock_fuota_service_init, mock_get_deployment_status, mock_create_deployment, mock_get_deployment_device_logs):
     # Arrange
     mock_app_service_instance = mock_app_service.return_value
     mock_device_service_instance = mock_device_service.return_value
@@ -153,7 +157,21 @@ async def test_send(mock_device_service, mock_app_service, mock_get_deployment_s
     status_response = MagicMock()
     status_response.frag_status_completed_at.seconds = int(time.time())
     status_response.frag_status_completed_at.nanos = 0
+    status_response.device_status = []
+    device_status_instance = MagicMock()
+    device_status_instance.device_eui = "test_eui"
+    device_status_instance.created_at.seconds = int(time.time())
+    device_status_instance.created_at.nanos = 0
+    status_response.device_status.append(device_status_instance)
     mock_get_deployment_status.return_value = status_response
+
+    device_logs = MagicMock()
+    device_logs.logs = []
+    device_status_instance_log = MagicMock()
+    device_status_instance_log.created_at.seconds = int(time.time())
+    device_status_instance_log.created_at.nanos = 0
+    device_logs.append(device_status_instance_log)
+    mock_get_deployment_device_logs.return_value = device_logs
 
     # Act
     await transport.send(bytes([random.randint(0, 255) for _ in range(2500)]))
