@@ -29,6 +29,8 @@ class SMPChirpstackFuotaTransportException(SMPClientException):
 
 logger = logging.getLogger(__name__)
 
+logger.setLevel(logging.INFO)
+
 """
 "fuota_config": {
                     "fragmentation_block_ack_delay": 1,
@@ -167,7 +169,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     @override
     async def send(self, data: bytes) -> None:
         self._send_start_time = time.time()
-        logger.debug(f"Sending {len(data)} B")
+        logger.info(f"Sending {len(data)} B")
         deployment_config = FuotaUtils.create_deployment_config(
             multicast_timeout=9,
             unicast_timeout=90,
@@ -175,7 +177,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             fragmentation_redundancy=100,
         )
         for offset in range(0, len(data), self.mtu):
-            logger.debug(f"Creating deployment for offset {offset}")
+            logger.info(f"Creating deployment for offset {offset}")
 
             try:
                 # Create the deployment
@@ -235,7 +237,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                         raise SMPChirpstackFuotaTransportException(f"Deployment timeout exceeded")
                 await asyncio.sleep(self._timeout_s)
 
-        logger.debug(f"Sent {len(data)} B")
+        logger.info(f"Sent {len(data)} B")
 
 
     @override
