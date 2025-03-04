@@ -173,6 +173,21 @@ async def test_send(mock_device_service, mock_app_service, mock_fuota_service_in
 
     device_logs = MagicMock()
     device_logs.logs = []
+    log_instance = MagicMock()
+    log_instance.created_at.seconds = int(time.time())
+    log_instance.created_at.nanos = 0
+    log_instance.command = "FragSessionSetupReq"
+    log_instance.fields = {}
+    log_instance.fields['nb_frag'] = 20
+    device_logs.logs.append(log_instance)
+    log_instance2 = MagicMock()
+    log_instance2.created_at.seconds = int(time.time())
+    log_instance2.created_at.nanos = 0
+    log_instance2.command = "FragSessionStatusAns"
+    log_instance2.fields = {}
+    log_instance2.fields['nb_frag_received'] = 20
+    device_logs.logs.append(log_instance2)
+
     device_status_instance_log = MagicMock()
     device_status_instance_log.created_at.seconds = int(time.time())
     device_status_instance_log.created_at.nanos = 0

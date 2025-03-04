@@ -496,7 +496,7 @@ grpcio = "*"
 
 [[package]]
 name = "chirpstack-fuota-client"
-version = "0.1.4"
+version = "0.1.9"
 description = ""
 optional = false
 python-versions = ">=3.8,<4.0"
@@ -515,7 +515,7 @@ pycryptodome = "^3.21.0"
 type = "git"
 url = "https://github.com/Zylum-Inc/chirpstack-fuota-client.git"
 reference = "HEAD"
-resolved_reference = "c723b0440c58bfce1f073a54b7ecdd54086d9502"
+resolved_reference = "caab1688e117431c6df20748d4746a9c79e78d7f"
 
 [[package]]
 name = "click"

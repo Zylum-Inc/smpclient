@@ -30,7 +30,7 @@ class SMPChirpstackFuotaTransportException(SMPClientException):
 
 logger = logging.getLogger(__name__)
 
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 """
 "fuota_config": {
@@ -348,9 +348,29 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
                 logger.debug(f"status_response: {status_response}")
                 if status_response["frag_status_completed_at"] > 0:
-                    deployment_completed = True
-                    downlink_stats.update_downlink_stats(status_response)
-                    logger.info(f"Downlink stats: {downlink_stats}")
+                    completed_devices = 0
+                    for device_status in status_response["device_status"]:
+                        frag_session_setup_req = False
+                        frag_session_status_ans = False
+                        nb_frag_sent = 0
+                        nb_frag_received = 0
+                        for log_entry in device_status['logs']:
+                            if log_entry['command'] == "FragSessionSetupReq":
+                                frag_session_setup_req = True
+                                nb_frag_sent = int(log_entry['fields']['nb_frag'])
+                            elif log_entry['command'] == "FragSessionStatusAns":
+                                frag_session_status_ans = True
+                                nb_frag_received = int(log_entry['fields']['nb_frag_received'])
+
+                        if frag_session_setup_req and frag_session_status_ans and nb_frag_sent == nb_frag_received:
+                            completed_devices += 1
+
+                    if completed_devices > 0:
+                        downlink_stats.update_downlink_stats(status_response)
+                        logger.info(f"Downlink stats: {downlink_stats}")
+                        deployment_completed = True
+                    else:
+                        raise SMPChirpstackFuotaTransportException(f"Deployment failed for all devices")
                 else:
                     if time.time() - self._send_start_time > self._send_max_duration_s:
                         raise SMPChirpstackFuotaTransportException(f"Deployment timeout exceeded")
