@@ -496,7 +496,7 @@ grpcio = "*"
 
 [[package]]
 name = "chirpstack-fuota-client"
-version = "0.1.9"
+version = "0.1.4"
 description = ""
 optional = false
 python-versions = ">=3.8,<4.0"
@@ -512,8 +512,10 @@ protobuf = "^5.28.2"
 pycryptodome = "^3.21.0"
 
 [package.source]
-type = "directory"
-url = "../chirpstack-fuota-client"
+type = "git"
+url = "https://github.com/Zylum-Inc/chirpstack-fuota-client.git"
+reference = "HEAD"
+resolved_reference = "c723b0440c58bfce1f073a54b7ecdd54086d9502"
 
 [[package]]
 name = "click"
@@ -2852,15 +2854,15 @@ files = [
 
 [[package]]
 name = "types-pyserial"
-version = "3.5.0.20250130"
+version = "3.5.0.20250304"
 description = "Typing stubs for pyserial"
 optional = false
 python-versions = ">=3.9"
 groups = ["dev"]
 markers = "python_version >= \"3.13\""
 files = [
-    {file = "types_pyserial-3.5.0.20250130-py3-none-any.whl", hash = "sha256:cd5dccb65fe83e2741853aaf45caabeecfcd4c5d050107b5e56f586b3d0f46cd"},
-    {file = "types_pyserial-3.5.0.20250130.tar.gz", hash = "sha256:bc23c799bf27ff5105ee6b7cb973d47ba1f222ad8f0a4223c0b0a979bd671f3e"},
+    {file = "types_pyserial-3.5.0.20250304-py3-none-any.whl", hash = "sha256:371a122889aa8c9479c19c4b2c4134d655939ada45f2523c38dae57a77d51a2e"},
+    {file = "types_pyserial-3.5.0.20250304.tar.gz", hash = "sha256:2526125aadb164ca0951a1bbcdd0ddd8d10537f4ab438820b8ce1f6c47d7821e"},
 ]
 
 [[package]]
@@ -3361,4 +3363,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.8.1, <3.14"
-content-hash = "b1de3f8fe2fde8c5cde2d969787451b138a186dd62477487e7db215a3ab7b553"
+content-hash = "bf6db358d0bc0560ab1cc37f83aebd8f629281e2510a0d19ade2aecf5e824c6e"

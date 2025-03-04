@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import math
 import random
 import time
 from typing import cast
@@ -21,7 +22,10 @@ from smpclient.transport.chirpstack_fuota import (
     ChirpstackFuotaRegionNames,
     DeploymentDevice,
     SMPChirpstackFuotaTransport,
-    SMPChirpstackFuotaConnectionError
+    SMPChirpstackFuotaConnectionError,
+    ChirpstackFuotaMulticastGroupTypes,
+    ChirpstackFuotaDownlinkSpeed,
+    chirpstack_fuota_configurations
 )
 
 logging.basicConfig(level=logging.DEBUG)
@@ -135,11 +139,13 @@ async def test_send(mock_device_service, mock_app_service, mock_fuota_service_in
     mock_device_service_instance = mock_device_service.return_value
 
     transport = SMPChirpstackFuotaTransport(
+        multicast_group_type=ChirpstackFuotaMulticastGroupTypes.CLASS_B,
         chirpstack_server_addr="localhost:8080",
         chirpstack_server_api_token="test_token",
         chirpstack_server_app_id="test_app_id",
         devices=[{"dev_eui": "test_eui", "gen_app_key": "test_key"}],
         chirpstack_fuota_server_addr="localhost:8070",
+        downlink_speed=ChirpstackFuotaDownlinkSpeed.DL_SLOW
     )
 
     # Mock the connect method dependencies
@@ -176,19 +182,25 @@ async def test_send(mock_device_service, mock_app_service, mock_fuota_service_in
     # Act
     await transport.send(bytes([random.randint(0, 255) for _ in range(2500)]))
 
+    expected_call_count = int(math.ceil(2500.0/chirpstack_fuota_configurations[ChirpstackFuotaMulticastGroupTypes.CLASS_B][ChirpstackFuotaDownlinkSpeed.DL_SLOW]["mtu"]))
+
     # Assert
     mock_create_deployment.assert_called()
-    assert mock_create_deployment.call_count == 3
+    assert mock_create_deployment.call_count == 2
     mock_get_deployment_status.assert_called_with("valid_id")
-    assert mock_get_deployment_status.call_count == 3
+    assert mock_get_deployment_status.call_count == 2
 
     # Verify the deployment_config
     called_args = mock_create_deployment.call_args[1]
     expected_deployment_config = {
-        "multicast_timeout": 9,
-        "unicast_timeout": 90,
-        "fragmentation_fragment_size": 64,
-        "fragmentation_redundancy": 100,
+        "multicast_timeout":
+            chirpstack_fuota_configurations[ChirpstackFuotaMulticastGroupTypes.CLASS_B][ChirpstackFuotaDownlinkSpeed.DL_SLOW]["multicast_timeout"],
+        "unicast_timeout":
+            chirpstack_fuota_configurations[ChirpstackFuotaMulticastGroupTypes.CLASS_B][ChirpstackFuotaDownlinkSpeed.DL_SLOW]["unicast_timeout"],
+        "fragmentation_fragment_size":
+            chirpstack_fuota_configurations[ChirpstackFuotaMulticastGroupTypes.CLASS_B][ChirpstackFuotaDownlinkSpeed.DL_SLOW]["fragmentation_fragment_size"],
+        "fragmentation_redundancy":
+            chirpstack_fuota_configurations[ChirpstackFuotaMulticastGroupTypes.CLASS_B][ChirpstackFuotaDownlinkSpeed.DL_SLOW]["fragmentation_redundancy"],
     }
     for key, value in expected_deployment_config.items():
         assert called_args[key] == value

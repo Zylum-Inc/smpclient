@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import sys
@@ -29,7 +30,7 @@ class SMPChirpstackFuotaTransportException(SMPClientException):
 
 logger = logging.getLogger(__name__)
 
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 """
 "fuota_config": {
@@ -53,6 +54,41 @@ logger.setLevel(logging.INFO)
 
 """
 
+class ChirpstackFuotaDownlinkStats:
+    def __init__(self):
+        self._start_time = time.time()
+        self._total_time = 0.0
+        self._total_multicast_downlink_time = 0.0
+        self._total_setup_time = 0.0
+        self._setup_overhead = 0.0
+        self._multicast_utilization = 0.0
+
+    def update_downlink_stats(self, status_response: dict) -> None:
+        self._total_multicast_downlink_time += (status_response["frag_status_completed_at"]
+                                                - status_response["enqueue_completed_at"])
+        self._total_setup_time += (status_response["enqueue_completed_at"] -
+                                   status_response["mc_group_setup_completed_at"])
+        self._total_time = time.time() - self._start_time
+
+        if self._total_time > 0:
+            self._multicast_utilization = self._total_multicast_downlink_time / self._total_time
+            self._setup_overhead = self._total_setup_time / self._total_time
+
+    def __str__(self) -> str:
+        return json.dumps({
+            "multicast_utilization": f"{self._multicast_utilization:.4f}",
+            "setup_overhead": f"{self._setup_overhead:.4f}",
+        })
+
+class ChirpstackFuotaMulticastGroupTypes(StrEnum):
+    CLASS_B = "CLASS_B"
+    CLASS_C = "CLASS_C"
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
+
 class ChirpstackFuotaDownlinkSpeed(StrEnum):
     DL_FAST = "DL_FAST"
     DL_MEDIUM = "DL_MEDIUM"
@@ -65,32 +101,65 @@ class ChirpstackFuotaDownlinkSpeed(StrEnum):
 
 # Define the configurations for each downlink speed
 chirpstack_fuota_configurations = {
-    ChirpstackFuotaDownlinkSpeed.DL_FAST: {
-        "mtu": 3328,
-        "multicast_dr": 11,
-        "multicast_timeout": 8,
-        "unicast_timeout": 90,
-        "fragmentation_fragment_size": 208,
-        "fragmentation_redundancy": 10,
+    ChirpstackFuotaMulticastGroupTypes.CLASS_C: {
+        ChirpstackFuotaDownlinkSpeed.DL_FAST: {
+            "mtu": 4992,
+            "multicast_dr": 11,
+            "multicast_timeout": 8,
+            "unicast_timeout": 45,
+            "fragmentation_fragment_size": 208,
+            "fragmentation_redundancy": 10,
+            "multicast_ping_slot_period": 0,
+        },
+        ChirpstackFuotaDownlinkSpeed.DL_MEDIUM: {
+            "mtu": 3072,
+            "multicast_dr": 10,
+            "multicast_timeout": 8,
+            "unicast_timeout": 45,
+            "fragmentation_fragment_size": 128,
+            "fragmentation_redundancy": 10,
+            "multicast_ping_slot_period": 0,
+        },
+        ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
+            "mtu": 1536,
+            "multicast_dr": 9,
+            "multicast_timeout": 8,
+            "unicast_timeout": 45,
+            "fragmentation_fragment_size": 64,
+            "fragmentation_redundancy": 10,
+            "multicast_ping_slot_period": 0,
+        },
     },
-    ChirpstackFuotaDownlinkSpeed.DL_MEDIUM: {
-        "mtu": 2048,
-        "multicast_dr": 10,
-        "multicast_timeout": 8,
-        "unicast_timeout": 90,
-        "fragmentation_fragment_size": 128,
-        "fragmentation_redundancy": 10,
-    },
-    ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
-        "mtu": 1536,
-        "multicast_dr": 9,
-        "multicast_timeout": 8,
-        "unicast_timeout": 90,
-        "fragmentation_fragment_size": 64,
-        "fragmentation_redundancy": 10,
-    },
+    ChirpstackFuotaMulticastGroupTypes.CLASS_B: {
+        ChirpstackFuotaDownlinkSpeed.DL_FAST: {
+            "mtu": 4992,
+            "multicast_dr": 11,
+            "multicast_timeout": 8,
+            "unicast_timeout": 45,
+            "fragmentation_fragment_size": 208,
+            "fragmentation_redundancy": 10,
+            "multicast_ping_slot_period": 0,
+        },
+        ChirpstackFuotaDownlinkSpeed.DL_MEDIUM: {
+            "mtu": 3072,
+            "multicast_dr": 10,
+            "multicast_timeout": 8,
+            "unicast_timeout": 45,
+            "fragmentation_fragment_size": 128,
+            "fragmentation_redundancy": 10,
+            "multicast_ping_slot_period": 0,
+        },
+        ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
+            "mtu": 1536,
+            "multicast_dr": 9,
+            "multicast_timeout": 5,
+            "unicast_timeout": 90,
+            "fragmentation_fragment_size": 64,
+            "fragmentation_redundancy": 10,
+            "multicast_ping_slot_period": 0,
+        },
+    }
 }
-
 
 
 class ChirpstackFuotaRegionNames(StrEnum):
@@ -128,7 +197,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     """A Chirpstack Fuota (LORAWAN FUOTA) SMPTransport."""
 
     def __init__(self, mtu: int = 1024,
-                 multicast_group_type: LoraBasicsClassNames = LoraBasicsClassNames.CLASS_C,
+                 multicast_group_type: ChirpstackFuotaMulticastGroupTypes = ChirpstackFuotaMulticastGroupTypes.CLASS_C,
                  multicast_region: ChirpstackFuotaRegionNames = ChirpstackFuotaRegionNames.US_915,
                  chirpstack_server_addr: str = "localhost:8080",
                  chirpstack_server_api_token: str = "",
@@ -211,15 +280,18 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     @override
     async def send(self, data: bytes) -> None:
         self._send_start_time = time.time()
+        downlink_stats = ChirpstackFuotaDownlinkStats()
         logger.info(f"Sending {len(data)} B")
-        self._mtu = chirpstack_fuota_configurations[self._downlink_speed]["mtu"]
+        self._mtu = chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["mtu"]
+        logger.debug(f"Mtu: {self._mtu}")
         self._send_max_duration_s = 500.0 * (len(data)/self._mtu)
         logger.info(f"send_max_duration_s: {self._send_max_duration_s}")
         deployment_config = FuotaUtils.create_deployment_config(
-            multicast_timeout=chirpstack_fuota_configurations[self._downlink_speed]["multicast_timeout"],
-            unicast_timeout=chirpstack_fuota_configurations[self._downlink_speed]["unicast_timeout"],
-            fragmentation_fragment_size=chirpstack_fuota_configurations[self._downlink_speed]["fragmentation_fragment_size"],
-            fragmentation_redundancy=chirpstack_fuota_configurations[self._downlink_speed]["fragmentation_redundancy"],
+            multicast_timeout=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_timeout"],
+            unicast_timeout=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["unicast_timeout"],
+            fragmentation_fragment_size=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["fragmentation_fragment_size"],
+            fragmentation_redundancy=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["fragmentation_redundancy"],
+            multicast_ping_slot_period=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_ping_slot_period"]
         )
         for offset in range(0, len(data), self._mtu):
             logger.info(f"Creating deployment for offset {offset}")
@@ -230,7 +302,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     application_id=self._chirpstack_server_app_id,
                     devices=self._matched_devices,
                     multicast_group_type=self._multicast_group_type,
-                    multicast_dr=chirpstack_fuota_configurations[self._downlink_speed]["multicast_dr"],
+                    multicast_dr=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_dr"],
                     multicast_frequency=923300000,
                     multicast_group_id=0,
                     multicast_region=self._multicast_region,
@@ -277,12 +349,15 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 logger.debug(f"status_response: {status_response}")
                 if status_response["frag_status_completed_at"] > 0:
                     deployment_completed = True
+                    downlink_stats.update_downlink_stats(status_response)
+                    logger.info(f"Downlink stats: {downlink_stats}")
                 else:
                     if time.time() - self._send_start_time > self._send_max_duration_s:
                         raise SMPChirpstackFuotaTransportException(f"Deployment timeout exceeded")
                 await asyncio.sleep(self._timeout_s)
 
         logger.info(f"Sent {len(data)} B")
+        logger.info(f"Downlink stats: {downlink_stats}")
 
 
     @override
