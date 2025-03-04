@@ -213,6 +213,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._send_start_time = time.time()
         logger.info(f"Sending {len(data)} B")
         self._mtu = chirpstack_fuota_configurations[self._downlink_speed]["mtu"]
+        self._send_max_duration_s = 500.0 * (len(data)/self._mtu)
+        logger.info(f"send_max_duration_s: {self._send_max_duration_s}")
         deployment_config = FuotaUtils.create_deployment_config(
             multicast_timeout=chirpstack_fuota_configurations[self._downlink_speed]["multicast_timeout"],
             unicast_timeout=chirpstack_fuota_configurations[self._downlink_speed]["unicast_timeout"],
