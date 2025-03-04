@@ -53,6 +53,46 @@ logger.setLevel(logging.INFO)
 
 """
 
+class ChirpstackFuotaDownlinkSpeed(StrEnum):
+    DL_FAST = "DL_FAST"
+    DL_MEDIUM = "DL_MEDIUM"
+    DL_SLOW = "DL_SLOW"
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
+
+# Define the configurations for each downlink speed
+chirpstack_fuota_configurations = {
+    ChirpstackFuotaDownlinkSpeed.DL_FAST: {
+        "mtu": 3328,
+        "multicast_dr": 11,
+        "multicast_timeout": 8,
+        "unicast_timeout": 90,
+        "fragmentation_fragment_size": 208,
+        "fragmentation_redundancy": 10,
+    },
+    ChirpstackFuotaDownlinkSpeed.DL_MEDIUM: {
+        "mtu": 2048,
+        "multicast_dr": 10,
+        "multicast_timeout": 8,
+        "unicast_timeout": 90,
+        "fragmentation_fragment_size": 128,
+        "fragmentation_redundancy": 10,
+    },
+    ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
+        "mtu": 1536,
+        "multicast_dr": 9,
+        "multicast_timeout": 8,
+        "unicast_timeout": 90,
+        "fragmentation_fragment_size": 64,
+        "fragmentation_redundancy": 10,
+    },
+}
+
+
+
 class ChirpstackFuotaRegionNames(StrEnum):
     EU_868 = "EU868"
     AS_923_GRP1 = "AS923"
@@ -96,6 +136,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                  devices: List[DeploymentDevice] = None,
                  chirpstack_fuota_server_addr: str = "localhost:8070",
                  send_max_duration_s: float = 3600.0,
+                 downlink_speed: ChirpstackFuotaDownlinkSpeed = ChirpstackFuotaDownlinkSpeed.DL_SLOW
                  ) -> None:
         """Initialize the SMP Chirpstack FUOTA transport.
 
@@ -119,6 +160,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._devices = devices
         self._matched_devices = []
         self._chirpstack_fuota_server_addr = chirpstack_fuota_server_addr
+        self._downlink_speed = downlink_speed
 
     async def verify_app_id(self, app_id: str) -> bool:
         verified = False
@@ -170,13 +212,14 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     async def send(self, data: bytes) -> None:
         self._send_start_time = time.time()
         logger.info(f"Sending {len(data)} B")
+        self._mtu = chirpstack_fuota_configurations[self._downlink_speed]["mtu"]
         deployment_config = FuotaUtils.create_deployment_config(
-            multicast_timeout=9,
-            unicast_timeout=90,
-            fragmentation_fragment_size=64,
-            fragmentation_redundancy=100,
+            multicast_timeout=chirpstack_fuota_configurations[self._downlink_speed]["multicast_timeout"],
+            unicast_timeout=chirpstack_fuota_configurations[self._downlink_speed]["unicast_timeout"],
+            fragmentation_fragment_size=chirpstack_fuota_configurations[self._downlink_speed]["fragmentation_fragment_size"],
+            fragmentation_redundancy=chirpstack_fuota_configurations[self._downlink_speed]["fragmentation_redundancy"],
         )
-        for offset in range(0, len(data), self.mtu):
+        for offset in range(0, len(data), self._mtu):
             logger.info(f"Creating deployment for offset {offset}")
 
             try:
@@ -185,7 +228,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     application_id=self._chirpstack_server_app_id,
                     devices=self._matched_devices,
                     multicast_group_type=self._multicast_group_type,
-                    multicast_dr=9,
+                    multicast_dr=chirpstack_fuota_configurations[self._downlink_speed]["multicast_dr"],
                     multicast_frequency=923300000,
                     multicast_group_id=0,
                     multicast_region=self._multicast_region,

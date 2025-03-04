@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "smpclient"
-version = "0.0.9"
+version = "0.0.11"
 description = "Simple Management Protocol (SMP) Client for remotely managing MCU firmware"
 authors = [
     "J.P. Hutchins <jphutchins@gmail.com>",
