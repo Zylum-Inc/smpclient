@@ -17,6 +17,9 @@ from chirpstack_api import api as chirpstack_api
 from chirpstack_fuota_client import  ApplicationService, DeviceService, DeviceProfileService, FuotaService, FuotaUtils
 
 from smp import header as smphdr
+from smp.header import CommandId
+from smp import os_management as smpos
+from smp import image_management as smpimg
 from typing_extensions import TypeGuard, override
 
 from smpclient.exceptions import SMPClientException
@@ -30,7 +33,7 @@ class SMPChirpstackFuotaTransportException(SMPClientException):
 
 logger = logging.getLogger(__name__)
 
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 """
 "fuota_config": {
@@ -121,7 +124,7 @@ chirpstack_fuota_configurations = {
             "multicast_ping_slot_period": 0,
         },
         ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
-            "mtu": 1536,
+            "mtu": 2560,
             "multicast_dr": 9,
             "multicast_timeout": 8,
             "unicast_timeout": 45,
@@ -216,7 +219,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._send_max_duration_s = send_max_duration_s
         self._send_start_time = 0.0
         self._send_end_time = 0.0
-        self._mtu = mtu
         self._fuota_service = None
         self._app_service = None
         if devices is None:
@@ -230,6 +232,11 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._matched_devices = []
         self._chirpstack_fuota_server_addr = chirpstack_fuota_server_addr
         self._downlink_speed = downlink_speed
+        self._off = 0
+        self._image_size = 0
+        self._mtu = chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["mtu"]
+        logger.debug(f"Chirpstack Fuota Mtu: {self._mtu}")
+
 
     async def verify_app_id(self, app_id: str) -> bool:
         verified = False
@@ -282,7 +289,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._send_start_time = time.time()
         downlink_stats = ChirpstackFuotaDownlinkStats()
         logger.info(f"Sending {len(data)} B")
-        self._mtu = chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["mtu"]
         logger.debug(f"Mtu: {self._mtu}")
         self._send_max_duration_s = 500.0 * (len(data)/self._mtu)
         logger.info(f"send_max_duration_s: {self._send_max_duration_s}")
@@ -348,6 +354,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
                 logger.debug(f"status_response: {status_response}")
                 if status_response["frag_status_completed_at"] > 0:
+                    device_logs_test_count = 0
                     completed_devices = 0
                     for device_status in status_response["device_status"]:
                         frag_session_setup_req = False
@@ -362,6 +369,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                                 frag_session_status_ans = True
                                 nb_frag_received = int(log_entry['fields']['nb_frag_received'])
 
+                        device_logs_test_count += 1
                         if frag_session_setup_req and frag_session_status_ans and nb_frag_sent == nb_frag_received:
                             completed_devices += 1
 
@@ -369,7 +377,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                         downlink_stats.update_downlink_stats(status_response)
                         logger.info(f"Downlink stats: {downlink_stats}")
                         deployment_completed = True
-                    else:
+                    elif device_logs_test_count > 3:
                         raise SMPChirpstackFuotaTransportException(f"Deployment failed for all devices")
                 else:
                     if time.time() - self._send_start_time > self._send_max_duration_s:
@@ -378,6 +386,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
         logger.info(f"Sent {len(data)} B")
         logger.info(f"Downlink stats: {downlink_stats}")
+        logger.info(f"Effective Data Rate: { len(data) / downlink_stats._total_time:.4f} B/s")
 
 
     @override
@@ -390,29 +399,44 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     @override
     async def send_and_receive(self, data: bytes) -> bytes:
         logger.debug(f"Sending and receiving {len(data)} B")
-        response = await self._fuota_service.send_and_receive(data)
-        logger.debug(f"Received {len(response)} B")
+        #TODO: Make this send an actual SMP Unicast Downlink message to the device(s), and have them respond
+        #      with an SMP Unicast Uplink message. For now, just echo the data back.
+        req_header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
+        logger.debug(f"Received {req_header}")
+        # Handle the so called MCUMgrParametersReadRequest
+        if (req_header.group_id == smphdr.GroupId.OS_MANAGEMENT
+                and req_header.command_id == CommandId.OSManagement.MCUMGR_PARAMETERS):
+            logger.debug("Received MCUMgrParametersReadRequest")
+            # Create the response
+            # Make sure the response sequence number matches the request sequence number
+            response = smpos.MCUMgrParametersReadResponse(buf_size=self._mtu, buf_count=1, sequence=req_header.sequence)
+            logger.debug(f"Sending MCUMgrParametersReadResponse: {response}")
+            return response.BYTES
+        elif (req_header.group_id == smphdr.GroupId.IMAGE_MANAGEMENT
+                and req_header.command_id == CommandId.ImageManagement.UPLOAD):
+            logger.debug("Received ImageUploadWriteRequest")
+            # Special handling for the *first* ImageUploadWriteRequest
+            image_upload_write_request = smpimg.ImageUploadWriteRequest.loads(data)
+            logger.debug(f"ImageUploadWriteRequest: {image_upload_write_request}")
+            # Check to see if this is the first block being transmitted
+            if image_upload_write_request.off == 0:
+                self._off = 0
+                self._image_size = image_upload_write_request.len
+            await self.send(data)
+            await asyncio.sleep(self._timeout_s)
+
+            self._off += image_upload_write_request.header.length
+            # Create the response
+            response = smpimg.ImageUploadWriteResponse(sequence=req_header.sequence, off=self._off)
+            logger.debug(f"Sending ImageBlockWriteResponse: {response}")
+            return response.BYTES
+
         return response
 
+
     @property
-    def mtu(self) -> int:
+    def max_unencoded_size(self) -> int:
         return self._mtu
-
-    @property
-    def max_unencoded_size(self) -> int:
-        return self._mtu - smphdr.HEADER_SIZE_BYTES
-
-    @property
-    def max_encoded_size(self) -> int:
-        return FuotaUtils.get_max_payload_size(self.max_unencoded_size)
-
-    @property
-    def max_unencoded_size(self) -> int:
-        return FuotaUtils.get_max_payload_size(self.max_encoded_size)
-
-    @property
-    def max_encoded_size(self) -> int:
-        return self._mtu - smphdr.HEADER_SIZE_BYTES
 
     @property
     def mtu(self) -> int:
