@@ -101,11 +101,11 @@ async def test_smpclient_with_chirpstack_fuota_transport(mock_device_service, mo
     device_logs.append(device_status_instance_log)
     mock_get_deployment_device_logs.return_value = device_logs
 
-    image = os.urandom(5000)
+    image = os.urandom(3000)
 
     # Act
-    async for offset in smpclient.upload(image):
+    async for offset in smpclient.upload(image, subsequent_timeout_s=40.0):
         pass
 
-    assert 0 == 1
+    assert offset == len(image)
 

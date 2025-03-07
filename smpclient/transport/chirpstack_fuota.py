@@ -33,7 +33,7 @@ class SMPChirpstackFuotaTransportException(SMPClientException):
 
 logger = logging.getLogger(__name__)
 
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 """
 "fuota_config": {
@@ -290,7 +290,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         downlink_stats = ChirpstackFuotaDownlinkStats()
         logger.info(f"Sending {len(data)} B")
         logger.debug(f"Mtu: {self._mtu}")
-        self._send_max_duration_s = 500.0 * (len(data)/self._mtu)
+        self._send_max_duration_s = max(500.0, 500.0 * (len(data)/self._mtu))
         logger.info(f"send_max_duration_s: {self._send_max_duration_s}")
         deployment_config = FuotaUtils.create_deployment_config(
             multicast_timeout=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_timeout"],
@@ -400,13 +400,14 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     async def send_and_receive(self, data: bytes) -> bytes:
         logger.debug(f"Sending and receiving {len(data)} B")
         #TODO: Make this send an actual SMP Unicast Downlink message to the device(s), and have them respond
-        #      with an SMP Unicast Uplink message. For now, just echo the data back.
+        #      with an SMP Unicast Uplink message. For now, just pretend there is an actual received response
         req_header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
         logger.debug(f"Received {req_header}")
         # Handle the so called MCUMgrParametersReadRequest
         if (req_header.group_id == smphdr.GroupId.OS_MANAGEMENT
                 and req_header.command_id == CommandId.OSManagement.MCUMGR_PARAMETERS):
-            logger.debug("Received MCUMgrParametersReadRequest")
+            mcumgr_params_read_request = smpos.MCUMgrParametersReadRequest.loads(data)
+            logger.debug(f"Received MCUMgrParametersReadRequest: {mcumgr_params_read_request}")
             # Create the response
             # Make sure the response sequence number matches the request sequence number
             response = smpos.MCUMgrParametersReadResponse(buf_size=self._mtu, buf_count=1, sequence=req_header.sequence)
@@ -417,7 +418,14 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             logger.debug("Received ImageUploadWriteRequest")
             # Special handling for the *first* ImageUploadWriteRequest
             image_upload_write_request = smpimg.ImageUploadWriteRequest.loads(data)
-            logger.debug(f"ImageUploadWriteRequest: {image_upload_write_request}")
+            #logger.debug(f"Received ImageUploadWriteRequest: {image_upload_write_request}")
+            logger.debug(f"ImageUploadWriteRequest.header: {image_upload_write_request.header}")
+            logger.debug(f"ImageUploadWriteRequest.sequence: {image_upload_write_request.sequence}")
+            logger.debug(f"len(ImageUploadWriteRequest.smp_data): {len(image_upload_write_request.smp_data)}")
+            logger.debug(f"len(ImageUploadWriteRequest.data): {len(image_upload_write_request.data)}")
+            logger.debug(f"ImageUploadWriteRequest.off: {image_upload_write_request.off} "
+                         f".len: {image_upload_write_request.len} "
+                         f".upgrade: {image_upload_write_request.upgrade}")
             # Check to see if this is the first block being transmitted
             if image_upload_write_request.off == 0:
                 self._off = 0
@@ -425,13 +433,15 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             await self.send(data)
             await asyncio.sleep(self._timeout_s)
 
-            self._off += image_upload_write_request.header.length
+            # Manually update the offset
+            self._off += len(image_upload_write_request.data)
+
             # Create the response
             response = smpimg.ImageUploadWriteResponse(sequence=req_header.sequence, off=self._off)
             logger.debug(f"Sending ImageBlockWriteResponse: {response}")
             return response.BYTES
-
-        return response
+        else:
+            raise SMPChirpstackFuotaTransportException(f"Unsupported command: {req_header}")
 
 
     @property
