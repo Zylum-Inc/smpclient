@@ -109,3 +109,6 @@ async def test_smpclient_with_chirpstack_fuota_transport(mock_device_service, mo
 
     assert offset == len(image)
 
+    assert 0 == 1
+
+

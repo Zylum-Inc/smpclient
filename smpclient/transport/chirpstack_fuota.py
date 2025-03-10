@@ -9,6 +9,8 @@ import re
 import sys
 import time
 
+from logging import FileHandler, Formatter, StreamHandler
+
 from enum import StrEnum
 from typing import Final, List, Protocol, TypedDict
 from uuid import UUID
@@ -31,9 +33,33 @@ class SMPChirpstackFuotaConnectionError(SMPClientException):
 class SMPChirpstackFuotaTransportException(SMPClientException):
     """Raised when an SMP Chirpstack FUOTA transport error occurs."""
 
-logger = logging.getLogger(__name__)
+# Create a custom logger
+def create_logger():
+    custom_logger = logging.getLogger(__name__)
+    custom_logger.setLevel(logging.DEBUG)
 
-logger.setLevel(logging.INFO)
+    # Create a file handler
+    file_handler = FileHandler('smpclient.log')
+    file_handler.setLevel(logging.DEBUG)
+
+    # Create a streaming handler
+    console = logging.StreamHandler(stream=sys.stdout)
+    console.setLevel(logging.CRITICAL)
+
+    # Create a formatter
+    formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Add the formatter to the handlers
+    console.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+
+    # Add the handlers to the logger
+    custom_logger.addHandler(console)
+    custom_logger.addHandler(file_handler)
+
+    return custom_logger
+
+cfc_logger = create_logger()
 
 """
 "fuota_config": {
@@ -235,7 +261,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._off = 0
         self._image_size = 0
         self._mtu = chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["mtu"]
-        logger.debug(f"Chirpstack Fuota Mtu: {self._mtu}")
+        cfc_logger.debug(f"Chirpstack Fuota Mtu: {self._mtu}")
+        cfc_logger.debug(f"Here are the handlers: {cfc_logger.handlers}")
 
 
     async def verify_app_id(self, app_id: str) -> bool:
@@ -246,7 +273,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             if application is not None:
                 verified = True
         except Exception as e:
-            logger.error(f"Failed to verify app id {app_id}: {str(e)}")
+            cfc_logger.error(f"Failed to verify app id {app_id}: {str(e)}")
         return verified
 
     async def get_matched_devices(self) -> List[DeploymentDevice]:
@@ -255,18 +282,18 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
             for device in self._devices:
                 device_response = device_service.get(device["dev_eui"])
-                logger.debug(f"Device response: {device_response} type: {type(device_response)}")
+                cfc_logger.debug(f"Device response: {device_response} type: {type(device_response)}")
                 if device_response is not None:
                     matched_devices.append(device)
         except Exception as e:
-            logger.error(f"Failed to get matched devices: {str(e)}")
+            cfc_logger.error(f"Failed to get matched devices: {str(e)}")
 
         return matched_devices
 
     @override
     async def connect(self, address: str, timeout_s: float) -> None:
         self._timeout_s = timeout_s
-        logger.debug(f"Connecting to chirpstack network server: {self._chirpstack_server_addr}")
+        cfc_logger.debug(f"Connecting to chirpstack network server: {self._chirpstack_server_addr}")
         try:
             if not await self.verify_app_id(self._chirpstack_server_app_id):
                 raise SMPChirpstackFuotaConnectionError(f"Failed to get application {self._chirpstack_server_app_id}")
@@ -280,18 +307,18 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
     @override
     async def disconnect(self) -> None:
-        logger.debug("Disconnecting from transport")
+        cfc_logger.debug("Disconnecting from transport")
         self._fuota_service = None
-        logger.info("Disconnected from transport")
+        cfc_logger.info("Disconnected from transport")
 
     @override
     async def send(self, data: bytes) -> None:
         self._send_start_time = time.time()
         downlink_stats = ChirpstackFuotaDownlinkStats()
-        logger.info(f"Sending {len(data)} B")
-        logger.debug(f"Mtu: {self._mtu}")
+        cfc_logger.info(f"Sending {len(data)} B")
+        cfc_logger.debug(f"Mtu: {self._mtu}")
         self._send_max_duration_s = max(500.0, 500.0 * (len(data)/self._mtu))
-        logger.info(f"send_max_duration_s: {self._send_max_duration_s}")
+        cfc_logger.info(f"send_max_duration_s: {self._send_max_duration_s}")
         deployment_config = FuotaUtils.create_deployment_config(
             multicast_timeout=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_timeout"],
             unicast_timeout=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["unicast_timeout"],
@@ -300,7 +327,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             multicast_ping_slot_period=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_ping_slot_period"]
         )
         for offset in range(0, len(data), self._mtu):
-            logger.info(f"Creating deployment for offset {offset}")
+            cfc_logger.info(f"Creating deployment for offset {offset}")
 
             try:
                 # Create the deployment
@@ -319,14 +346,14 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             except Exception as e:
                 raise SMPChirpstackFuotaTransportException(f"Failed create deployment for offset {offset}: {str(e)}")
 
-            logger.debug(f"Created FUOTA deployment with ID: {deployment_response.id}")
+            cfc_logger.debug(f"Created FUOTA deployment with ID: {deployment_response.id}")
 
             deployment_completed = False
 
             # logger.debug(f"Sleeping for 30 seconds")
             # await asyncio.sleep(30)
 
-            logger.debug(f"Getting deployment status")
+            cfc_logger.debug(f"Getting deployment status")
 
             while not deployment_completed:
                 # Get deployment status
@@ -352,7 +379,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 except Exception as e:
                     raise SMPChirpstackFuotaTransportException(f"Failed to get deployment status: {str(e)}")
 
-                logger.debug(f"status_response: {status_response}")
+                cfc_logger.debug(f"status_response: {status_response}")
                 if status_response["frag_status_completed_at"] > 0:
                     device_logs_test_count = 0
                     completed_devices = 0
@@ -375,7 +402,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
                     if completed_devices > 0:
                         downlink_stats.update_downlink_stats(status_response)
-                        logger.info(f"Downlink stats: {downlink_stats}")
+                        cfc_logger.info(f"Downlink stats: {downlink_stats}")
                         deployment_completed = True
                     elif device_logs_test_count > 3:
                         raise SMPChirpstackFuotaTransportException(f"Deployment failed for all devices")
@@ -384,46 +411,46 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                         raise SMPChirpstackFuotaTransportException(f"Deployment timeout exceeded")
                 await asyncio.sleep(self._timeout_s)
 
-        logger.info(f"Sent {len(data)} B")
-        logger.info(f"Downlink stats: {downlink_stats}")
-        logger.info(f"Effective Data Rate: { len(data) / downlink_stats._total_time:.4f} B/s")
+        cfc_logger.info(f"Sent {len(data)} B")
+        cfc_logger.info(f"Downlink stats: {downlink_stats}")
+        cfc_logger.info(f"Effective Data Rate: { len(data) / downlink_stats._total_time:.4f} B/s")
 
 
     @override
     async def receive(self) -> bytes:
-        logger.debug("Receiving data")
+        cfc_logger.debug("Receiving data")
         data = await self._fuota_service.receive()
-        logger.debug(f"Received {len(data)} B")
+        cfc_logger.debug(f"Received {len(data)} B")
         return data
 
     @override
     async def send_and_receive(self, data: bytes) -> bytes:
-        logger.debug(f"Sending and receiving {len(data)} B")
+        cfc_logger.debug(f"Sending and receiving {len(data)} B")
         #TODO: Make this send an actual SMP Unicast Downlink message to the device(s), and have them respond
         #      with an SMP Unicast Uplink message. For now, just pretend there is an actual received response
         req_header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
-        logger.debug(f"Received {req_header}")
+        cfc_logger.debug(f"Received {req_header}")
         # Handle the so called MCUMgrParametersReadRequest
         if (req_header.group_id == smphdr.GroupId.OS_MANAGEMENT
                 and req_header.command_id == CommandId.OSManagement.MCUMGR_PARAMETERS):
             mcumgr_params_read_request = smpos.MCUMgrParametersReadRequest.loads(data)
-            logger.debug(f"Received MCUMgrParametersReadRequest: {mcumgr_params_read_request}")
+            cfc_logger.debug(f"Received MCUMgrParametersReadRequest: {mcumgr_params_read_request}")
             # Create the response
             # Make sure the response sequence number matches the request sequence number
             response = smpos.MCUMgrParametersReadResponse(buf_size=self._mtu, buf_count=1, sequence=req_header.sequence)
-            logger.debug(f"Sending MCUMgrParametersReadResponse: {response}")
+            cfc_logger.debug(f"Sending MCUMgrParametersReadResponse: {response}")
             return response.BYTES
         elif (req_header.group_id == smphdr.GroupId.IMAGE_MANAGEMENT
                 and req_header.command_id == CommandId.ImageManagement.UPLOAD):
-            logger.debug("Received ImageUploadWriteRequest")
+            cfc_logger.debug("Received ImageUploadWriteRequest")
             # Special handling for the *first* ImageUploadWriteRequest
             image_upload_write_request = smpimg.ImageUploadWriteRequest.loads(data)
             #logger.debug(f"Received ImageUploadWriteRequest: {image_upload_write_request}")
-            logger.debug(f"ImageUploadWriteRequest.header: {image_upload_write_request.header}")
-            logger.debug(f"ImageUploadWriteRequest.sequence: {image_upload_write_request.sequence}")
-            logger.debug(f"len(ImageUploadWriteRequest.smp_data): {len(image_upload_write_request.smp_data)}")
-            logger.debug(f"len(ImageUploadWriteRequest.data): {len(image_upload_write_request.data)}")
-            logger.debug(f"ImageUploadWriteRequest.off: {image_upload_write_request.off} "
+            cfc_logger.debug(f"ImageUploadWriteRequest.header: {image_upload_write_request.header}")
+            cfc_logger.debug(f"ImageUploadWriteRequest.sequence: {image_upload_write_request.sequence}")
+            cfc_logger.debug(f"len(ImageUploadWriteRequest.smp_data): {len(image_upload_write_request.smp_data)}")
+            cfc_logger.debug(f"len(ImageUploadWriteRequest.data): {len(image_upload_write_request.data)}")
+            cfc_logger.debug(f"ImageUploadWriteRequest.off: {image_upload_write_request.off} "
                          f".len: {image_upload_write_request.len} "
                          f".upgrade: {image_upload_write_request.upgrade}")
             # Check to see if this is the first block being transmitted
@@ -438,7 +465,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             # Create the response
             response = smpimg.ImageUploadWriteResponse(sequence=req_header.sequence, off=self._off)
-            logger.debug(f"Sending ImageBlockWriteResponse: {response}")
+            cfc_logger.debug(f"Sending ImageBlockWriteResponse: {response}")
             return response.BYTES
         else:
             raise SMPChirpstackFuotaTransportException(f"Unsupported command: {req_header}")
