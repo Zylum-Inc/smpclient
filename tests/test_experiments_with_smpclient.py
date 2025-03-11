@@ -108,7 +108,8 @@ async def test_smpclient_with_chirpstack_fuota_transport(mock_device_service, mo
     log_instance2.created_at.nanos = 0
     log_instance2.command = "FragSessionStatusAns"
     log_instance2.fields = {}
-    log_instance2.fields['nb_frag_received'] = 20
+    log_instance2.fields['nb_frag_received'] = 21
+    log_instance2.fields['missing_frag'] = 0
     device_logs.logs.append(log_instance2)
 
     device_status_instance_log = MagicMock()

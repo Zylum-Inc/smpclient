@@ -371,6 +371,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                         frag_session_status_ans = False
                         nb_frag_sent = 0
                         nb_frag_received = 0
+                        missing_frag = -1
                         for log_entry in device_status['logs']:
                             if log_entry['command'] == "FragSessionSetupReq":
                                 frag_session_setup_req = True
@@ -378,9 +379,12 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                             elif log_entry['command'] == "FragSessionStatusAns":
                                 frag_session_status_ans = True
                                 nb_frag_received = int(log_entry['fields']['nb_frag_received'])
+                                missing_frag = int(log_entry['fields']['missing_frag'])
 
                         device_logs_test_count += 1
-                        if frag_session_setup_req and frag_session_status_ans and nb_frag_sent == nb_frag_received:
+                        if ((frag_session_setup_req and frag_session_status_ans
+                                and nb_frag_sent <= nb_frag_received)
+                                and missing_frag == 0):
                             completed_devices += 1
 
                     if completed_devices > 0:
