@@ -382,9 +382,12 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                                 missing_frag = int(log_entry['fields']['missing_frag'])
 
                         device_logs_test_count += 1
-                        if ((frag_session_setup_req and frag_session_status_ans
-                                and nb_frag_sent <= nb_frag_received)
-                                and missing_frag == 0):
+                        # Hack: To handle a bad bug in the Semtech LBM 4.5.X code,
+                        # whereby the code reports a *phantom* missing fragment, even for a
+                        # successful FUOTA session where *no* fragments were lost
+                        if (frag_session_setup_req and frag_session_status_ans
+                                and (nb_frag_sent == nb_frag_received
+                                     or (nb_frag_sent <= nb_frag_received and missing_frag == 0))):
                             completed_devices += 1
 
                     if completed_devices > 0:
