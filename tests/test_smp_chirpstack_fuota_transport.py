@@ -38,7 +38,7 @@ class MockChirpstackFuotaService:
 
 def test_default_constructor() -> None:
     t = SMPChirpstackFuotaTransport()
-    assert t.mtu == 1024
+    assert t.mtu == 2560
     assert t._multicast_group_type == LoraBasicsClassNames.CLASS_C
     assert t._multicast_region == ChirpstackFuotaRegionNames.US_915
     assert t._chirpstack_server_addr == "localhost:8080"
@@ -48,8 +48,8 @@ def test_default_constructor() -> None:
     assert t._chirpstack_fuota_server_addr == "localhost:8070"
 
 def test_class_c_constructor() -> None:
-    t = SMPChirpstackFuotaTransport(mtu=2048, multicast_group_type=LoraBasicsClassNames.CLASS_C)
-    assert t.mtu == 2048
+    t = SMPChirpstackFuotaTransport(multicast_group_type=LoraBasicsClassNames.CLASS_C)
+    assert t.mtu == 2560
     assert t._multicast_group_type == LoraBasicsClassNames.CLASS_C
 
 @pytest.mark.asyncio

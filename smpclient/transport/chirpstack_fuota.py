@@ -33,33 +33,7 @@ class SMPChirpstackFuotaConnectionError(SMPClientException):
 class SMPChirpstackFuotaTransportException(SMPClientException):
     """Raised when an SMP Chirpstack FUOTA transport error occurs."""
 
-# Create a custom logger
-def create_logger():
-    custom_logger = logging.getLogger(__name__)
-    custom_logger.setLevel(logging.DEBUG)
-
-    # Create a file handler
-    file_handler = FileHandler('smpclient.log')
-    file_handler.setLevel(logging.DEBUG)
-
-    # Create a streaming handler
-    console = logging.StreamHandler(stream=sys.stdout)
-    console.setLevel(logging.CRITICAL)
-
-    # Create a formatter
-    formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    # Add the formatter to the handlers
-    console.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-
-    # Add the handlers to the logger
-    custom_logger.addHandler(console)
-    custom_logger.addHandler(file_handler)
-
-    return custom_logger
-
-cfc_logger = create_logger()
+cfc_logger = logging.getLogger(__name__)
 
 """
 "fuota_config": {
@@ -290,6 +264,34 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
         return matched_devices
 
+    async def get_deployment_status(self, deployment_id: str) -> dict:
+        try:
+            deployment_status = self._fuota_service.get_deployment_status(deployment_id)
+            status_response = FuotaUtils.serialize_deployment_status(deployment_status, "epoch")
+
+            # Get device logs
+            for device_status in status_response["device_status"]:
+                try:
+                    device_logs = self._fuota_service.get_deployment_device_logs(
+                        deployment_id=deployment_id,
+                        dev_eui=device_status["dev_eui"]
+                    )
+                    if device_logs and device_logs.logs:
+                        device_status["logs"] = FuotaUtils.serialize_device_logs(device_logs, "epoch")
+
+                except Exception as e:
+                    print(f"Error getting device logs for {device_status['dev_eui']}: {str(e)}")
+                    device_status["logs_error"] = str(e)
+                    raise SMPChirpstackFuotaTransportException(f"Failed to get device logs: {str(e)}")
+
+            return status_response
+
+        except Exception as e:
+            raise SMPChirpstackFuotaTransportException(f"Failed to get deployment status: {str(e)}")
+
+
+
+
     @override
     async def connect(self, address: str, timeout_s: float) -> None:
         self._timeout_s = timeout_s
@@ -324,7 +326,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             unicast_timeout=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["unicast_timeout"],
             fragmentation_fragment_size=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["fragmentation_fragment_size"],
             fragmentation_redundancy=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["fragmentation_redundancy"],
-            multicast_ping_slot_period=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_ping_slot_period"]
+            multicast_ping_slot_period=chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["multicast_ping_slot_period"],
+            unicast_attempt_count=3
         )
         for offset in range(0, len(data), self._mtu):
             cfc_logger.info(f"Creating deployment for offset {offset}")
@@ -357,27 +360,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             while not deployment_completed:
                 # Get deployment status
-                try:
-                    deployment_status = self._fuota_service.get_deployment_status(deployment_response.id)
-                    status_response = FuotaUtils.serialize_deployment_status(deployment_status, "epoch")
-
-                    # Get device logs
-                    for device_status in status_response["device_status"]:
-                        try:
-                            device_logs = self._fuota_service.get_deployment_device_logs(
-                                deployment_id=deployment_response.id,
-                                dev_eui=device_status["dev_eui"]
-                            )
-                            if device_logs and device_logs.logs:
-                                device_status["logs"] = FuotaUtils.serialize_device_logs(device_logs, "epoch")
-
-                        except Exception as e:
-                            print(f"Error getting device logs for {device_status['dev_eui']}: {str(e)}")
-                            device_status["logs_error"] = str(e)
-
-
-                except Exception as e:
-                    raise SMPChirpstackFuotaTransportException(f"Failed to get deployment status: {str(e)}")
+                status_response = await self.get_deployment_status(deployment_response.id)
 
                 cfc_logger.debug(f"status_response: {status_response}")
                 if status_response["frag_status_completed_at"] > 0:

@@ -19,6 +19,21 @@ from google.protobuf.internal.well_known_types import Timestamp
 
 from smpclient import SMPClient
 
+# Set the root logging level to DEBUG
+logging.basicConfig(level=logging.DEBUG)
+
+# Create a file handler
+file_handler = logging.FileHandler('test_smp_experiments.log')
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logging.getLogger().addHandler(file_handler)
+
+# Set the console log level to CRITICAL
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.CRITICAL)
+logging.getLogger().addHandler(console_handler)
+
 from smpclient.requests.os_management import EchoWrite
 from smpclient.transport.chirpstack_fuota import (
     LoraBasicsClassNames,
@@ -39,6 +54,7 @@ from smpclient.transport.chirpstack_fuota import (
 @patch("smpclient.transport.chirpstack_fuota.ApplicationService")
 @patch("smpclient.transport.chirpstack_fuota.DeviceService")
 async def test_smpclient_with_chirpstack_fuota_transport(mock_device_service, mock_app_service, mock_fuota_service_init, mock_get_deployment_status, mock_create_deployment, mock_get_deployment_device_logs):
+
 
     # Arrange
     mock_app_service_instance = mock_app_service.return_value
@@ -108,7 +124,5 @@ async def test_smpclient_with_chirpstack_fuota_transport(mock_device_service, mo
         pass
 
     assert offset == len(image)
-
-    assert 0 == 1
 
 
