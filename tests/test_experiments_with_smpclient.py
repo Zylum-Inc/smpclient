@@ -19,20 +19,7 @@ from google.protobuf.internal.well_known_types import Timestamp
 
 from smpclient import SMPClient
 
-# Set the root logging level to DEBUG
-logging.basicConfig(level=logging.DEBUG)
-
-# Create a file handler
-file_handler = logging.FileHandler('test_smp_experiments.log')
-file_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logging.getLogger().addHandler(file_handler)
-
-# Set the console log level to CRITICAL
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.CRITICAL)
-logging.getLogger().addHandler(console_handler)
+logging.getLogger().setLevel(logging.DEBUG)
 
 from smpclient.requests.os_management import EchoWrite
 from smpclient.transport.chirpstack_fuota import (

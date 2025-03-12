@@ -444,6 +444,8 @@ class SMPClient:
         h: Final = request.header
         cbor_size, data_size = self._get_max_cbor_and_data_size(request)
 
+        logger.debug(f"cbor_size: {cbor_size}, data_size: {data_size}")
+
         if data_size > len(image) - request.off:  # final packet
             data_size = len(image) - request.off
             cbor_size = h.length + data_size + self._cbor_integer_size(data_size)
