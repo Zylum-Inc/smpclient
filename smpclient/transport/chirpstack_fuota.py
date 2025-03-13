@@ -124,12 +124,12 @@ chirpstack_fuota_configurations = {
             "multicast_ping_slot_period": 0,
         },
         ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
-            "mtu": 2560,
+            "mtu": 2048,
             "multicast_dr": 9,
             "multicast_timeout": 8,
             "unicast_timeout": 45,
             "fragmentation_fragment_size": 64,
-            "fragmentation_redundancy": 10,
+            "fragmentation_redundancy": 5,
             "multicast_ping_slot_period": 0,
         },
     },
@@ -153,13 +153,13 @@ chirpstack_fuota_configurations = {
             "multicast_ping_slot_period": 0,
         },
         ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
-            "mtu": 1536,
-            "multicast_dr": 9,
+            "mtu": 1920,
+            "multicast_dr": 10,
             "multicast_timeout": 5,
             "unicast_timeout": 90,
             "fragmentation_fragment_size": 64,
-            "fragmentation_redundancy": 10,
-            "multicast_ping_slot_period": 0,
+            "fragmentation_redundancy": 5,
+            "multicast_ping_slot_period": 1,
         },
     }
 }
@@ -325,9 +325,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 deployment_completed = True
             elif device_logs_test_count > 3:
                 raise SMPChirpstackFuotaTransportException(f"Deployment failed for all devices")
-        else:
-            if time.time() - self._send_start_time > self._send_max_duration_s:
-                raise SMPChirpstackFuotaTransportException(f"Deployment timeout exceeded")
 
         return deployment_completed
 
@@ -404,6 +401,11 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     status_response = await self.get_deployment_status(deployment_response.id)
                     cfc_logger.debug(f"status_response: {status_response}")
                     deployment_completed = self.check_status_response(status_response, downlink_stats)
+
+                    if not deployment_completed:
+                        if time.time() - self._send_start_time > self._send_max_duration_s:
+                            raise SMPChirpstackFuotaTransportException(f"Deployment timeout exceeded")
+
                     await asyncio.sleep(self._timeout_s)
             except Exception as e:
                 raise SMPChirpstackFuotaTransportException(f"Failed to get deployment status: {str(e)}")
