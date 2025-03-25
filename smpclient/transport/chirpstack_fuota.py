@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import re
 import sys
 import time
+import subprocess
+import requests
+
+from datetime import datetime
 
 from logging import FileHandler, Formatter, StreamHandler
 
@@ -18,6 +23,7 @@ from uuid import UUID
 from chirpstack_api import api as chirpstack_api
 from chirpstack_fuota_client import  ApplicationService, DeviceService, DeviceProfileService, FuotaService, FuotaUtils
 
+from smp.message import ReadRequest as SMPReadRequest
 from smp import header as smphdr
 from smp.header import CommandId
 from smp import os_management as smpos
@@ -208,7 +214,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                  devices: List[DeploymentDevice] = None,
                  chirpstack_fuota_server_addr: str = "localhost:8070",
                  send_max_duration_s: float = 3600.0,
-                 downlink_speed: ChirpstackFuotaDownlinkSpeed = ChirpstackFuotaDownlinkSpeed.DL_SLOW
+                 downlink_speed: ChirpstackFuotaDownlinkSpeed = ChirpstackFuotaDownlinkSpeed.DL_SLOW,
+                 tas_api_addr: str = "localhost:8002",
+                 tas_api_lns_id: str = ""
                  ) -> None:
         """Initialize the SMP Chirpstack FUOTA transport.
 
@@ -232,6 +240,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._matched_devices = []
         self._chirpstack_fuota_server_addr = chirpstack_fuota_server_addr
         self._downlink_speed = downlink_speed
+        self._tas_api_addr = tas_api_addr
+        self._tas_api_lns_id = tas_api_lns_id
         self._off = 0
         self._image_size = 0
         self._mtu = chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["mtu"]
@@ -349,6 +359,100 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         cfc_logger.debug("Disconnecting from transport")
         self._fuota_service = None
         cfc_logger.info("Disconnected from transport")
+
+    async def send_unicast(self, dev_eui: str, data: bytes, fport: int) -> None:
+        cfc_logger.debug(f"Sending unicast data: {data}")
+        try:
+            device_service = DeviceService(self._chirpstack_server_addr, self._chirpstack_server_api_token)
+            device_service.queue_downlink(dev_eui, data, fport)
+        except Exception as e:
+            cfc_logger.error(f"Failed to send unicast message to device {dev_eui}: {str(e)}")
+            raise SMPChirpstackFuotaTransportException(f"Failed to send unicast message to device {dev_eui}: {str(e)}")
+
+    # These functions have been copied from tas-cli. They should probably be modularized.
+    def find_dev_id_by_dev_eui(self, dev_eui: str):
+        lns_uri = f"{self._tas_api_addr}/devices/lns_config/?dev_eui={dev_eui}&lns_id={self._tas_api_lns_id}"
+
+        cloud_lns_response = requests.get(lns_uri)
+
+        if cloud_lns_response.status_code == 200:
+            return cloud_lns_response.json()[0]['device_id']
+
+        return None
+
+    def get_messages_by_dev_id(self, dev_id: str, message_type: str = None, fport: int = None, after_epoch: int = None):
+        request_uri = f"{self._tas_api_addr}/devices/{dev_id}/messages/"
+
+        if message_type is not None:
+            request_uri += f"?type={message_type}"
+
+        if fport is not None:
+            request_uri += f"&port={fport}"
+
+        if after_epoch is not None:
+            request_uri += f"&captured_at__gt={datetime.fromtimestamp(after_epoch).isoformat()}"
+
+        cloud_lns_response = requests.get(request_uri)
+
+        if cloud_lns_response.status_code == 200:
+            return cloud_lns_response.json()
+
+        raise SMPChirpstackFuotaTransportException(f"Failed to get messages for device {dev_id}")
+
+    async def receive_unicast(self, after_epoch: int, dev_eui: str, fport: int, timeout_s: float):
+
+        start_time = time.time()
+        cfc_logger.debug(f"Receiving unicast data from device {dev_eui}")
+
+        dev_id = self.find_dev_id_by_dev_eui(dev_eui)
+        if dev_id is None:
+            raise SMPChirpstackFuotaTransportException(f"Failed to find device ID for {dev_eui}")
+
+        while time.time() - start_time < timeout_s:
+            # Get the messages
+            uplinks = self.get_messages_by_dev_id(dev_id, 'uplink', fport, after_epoch)
+
+            sorted_uplinks = sorted(uplinks,
+                                     key=lambda x: datetime.fromisoformat(x['data']['time'].replace('Z', '+00:00')))
+
+            if len(sorted_uplinks) == 0:
+                cfc_logger.debug(f"No messages received yet")
+                await asyncio.sleep(5)
+                continue
+
+            payload_bytes = base64.b64decode(sorted_uplinks[0]["data"]["data"])
+
+            if len(payload_bytes) < smphdr.Header.SIZE:  # pragma: no cover
+                raise SMPChirpstackFuotaTransportException(
+                    f"Buffer contents not big enough for SMP header: {payload_bytes=}"
+                )
+
+            header = smphdr.Header.loads(payload_bytes[: smphdr.Header.SIZE])
+            cfc_logger.debug(f"Received {header=}")
+
+            message_length = header.length + header.SIZE
+            cfc_logger.debug(f"Waiting for the rest of the {message_length} byte response")
+
+            if len(payload_bytes) == message_length:
+                cfc_logger.debug(f"Received full message: {payload_bytes}")
+                return payload_bytes
+
+            for uplink in sorted_uplinks[1:]:
+                more_payload_bytes = base64.b64decode(uplink["data"]["data"])
+                cfc_logger.debug(f"Received more payload: {more_payload_bytes}")
+                payload_bytes += more_payload_bytes
+                # Check if we have received the full message
+                if len(payload_bytes) == message_length:
+                    break
+                elif len(payload_bytes) > message_length:
+                    raise SMPChirpstackFuotaTransportException(
+                        f"Received too much data: {payload_bytes=}"
+                    )
+
+            return payload_bytes
+
+        return None
+
 
     @override
     async def send(self, data: bytes) -> None:
