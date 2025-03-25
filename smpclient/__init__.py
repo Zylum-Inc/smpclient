@@ -495,7 +495,7 @@ class SMPClient:
         """Gather initialization information from the SMP server."""
 
         try:
-            async with timeout(2):
+            async with timeout(120):
                 mcumgr_parameters = await self.request(MCUMgrParametersRead())
                 if success(mcumgr_parameters):
                     logger.debug(f"MCUMgr parameters: {mcumgr_parameters}")

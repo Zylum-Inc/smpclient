@@ -10,9 +10,11 @@ import re
 import sys
 import time
 import subprocess
+import urllib.parse
+
 import requests
 
-from datetime import datetime
+from datetime import datetime, tzinfo
 
 from logging import FileHandler, Formatter, StreamHandler
 
@@ -242,6 +244,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._downlink_speed = downlink_speed
         self._tas_api_addr = tas_api_addr
         self._tas_api_lns_id = tas_api_lns_id
+        self._last_send_time = 0.0
+        self._expected_response_sequence = 0
         self._off = 0
         self._image_size = 0
         self._mtu = chirpstack_fuota_configurations[self._multicast_group_type][self._downlink_speed]["mtu"]
@@ -390,7 +394,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             request_uri += f"&port={fport}"
 
         if after_epoch is not None:
-            request_uri += f"&captured_at__gt={datetime.fromtimestamp(after_epoch).isoformat()}"
+            request_uri += f"&captured_at__gt={urllib.parse.quote(datetime.utcfromtimestamp(after_epoch).isoformat(timespec='seconds'))}"
+
+        cfc_logger.debug(f"Requesting messages from {request_uri}")
 
         cloud_lns_response = requests.get(request_uri)
 
@@ -402,13 +408,19 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     async def receive_unicast(self, after_epoch: int, dev_eui: str, fport: int, timeout_s: float):
 
         start_time = time.time()
-        cfc_logger.debug(f"Receiving unicast data from device {dev_eui}")
+        cfc_logger.debug(f"Receiving unicast data from device {dev_eui}, after {after_epoch} seconds")
 
         dev_id = self.find_dev_id_by_dev_eui(dev_eui)
         if dev_id is None:
             raise SMPChirpstackFuotaTransportException(f"Failed to find device ID for {dev_eui}")
 
-        while time.time() - start_time < timeout_s:
+        while True:
+            diff = time.time() - start_time
+            if diff > timeout_s:
+                break
+
+            cfc_logger.debug(f"diff: {diff} seconds, timeout: {timeout_s} seconds")
+
             # Get the messages
             uplinks = self.get_messages_by_dev_id(dev_id, 'uplink', fport, after_epoch)
 
@@ -419,6 +431,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 cfc_logger.debug(f"No messages received yet")
                 await asyncio.sleep(5)
                 continue
+
+            cfc_logger.debug(f"len(sorted_uplinks): {len(sorted_uplinks)}")
 
             payload_bytes = base64.b64decode(sorted_uplinks[0]["data"]["data"])
 
@@ -435,27 +449,48 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             if len(payload_bytes) == message_length:
                 cfc_logger.debug(f"Received full message: {payload_bytes}")
-                return payload_bytes
+                # Additionally, make sure the sequence numbers match the expected value
+                if header.sequence == self._expected_response_sequence:
+                    return payload_bytes
+                else:
+                    cfc_logger.debug(f"Sequence number mismatch: {header.sequence} != {self._expected_response_sequence}")
+                    header = None
+                    if len(sorted_uplinks) == 1:
+                        cfc_logger.debug(f"Received only one payload, waiting for more")
+                        await asyncio.sleep(5)
+                        continue
 
             for uplink in sorted_uplinks[1:]:
                 more_payload_bytes = base64.b64decode(uplink["data"]["data"])
-                cfc_logger.debug(f"Received more payload: {more_payload_bytes}")
-                payload_bytes += more_payload_bytes
+                if header is None:
+                    header = smphdr.Header.loads(more_payload_bytes[: smphdr.Header.SIZE])
+                    payload_bytes = more_payload_bytes
+                    cfc_logger.debug(f"Received new {header=}")
+
+                    message_length = header.length + header.SIZE
+                    cfc_logger.debug(f"Waiting for the rest of the new {message_length} byte response")
+                else:
+                    cfc_logger.debug(f"Received more payload: {more_payload_bytes}")
+                    payload_bytes += more_payload_bytes
+
                 # Check if we have received the full message
                 if len(payload_bytes) == message_length:
-                    break
+                    cfc_logger.debug(f"Received full message: {payload_bytes}")
+                    # Additionally, make sure the sequence numbers match the expected value
+                    if header.sequence == self._expected_response_sequence:
+                        return payload_bytes
+                    else:
+                        cfc_logger.debug(f"Sequence number mismatch: {header.sequence} != {self._expected_response_sequence}")
+                        header = None
                 elif len(payload_bytes) > message_length:
                     raise SMPChirpstackFuotaTransportException(
                         f"Received too much data: {payload_bytes=}"
                     )
 
-            return payload_bytes
-
         return None
 
 
-    @override
-    async def send(self, data: bytes) -> None:
+    async def send_multicast(self, data: bytes) -> None:
         self._send_start_time = time.time()
         downlink_stats = ChirpstackFuotaDownlinkStats()
         cfc_logger.info(f"Sending {len(data)} B")
@@ -518,60 +553,46 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         cfc_logger.info(f"Downlink stats: {downlink_stats}")
         cfc_logger.info(f"Effective Data Rate: { len(data) / downlink_stats._total_time:.4f} B/s")
 
+    @override
+    async def send(self, data: bytes) -> None:
+        cfc_logger.debug(f"Sending {len(data)} B")
+        req_header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
+        cfc_logger.debug(f"Header {req_header=}")
+
+        if (req_header.group_id == smphdr.GroupId.IMAGE_MANAGEMENT
+                and req_header.command_id == CommandId.ImageManagement.UPLOAD):
+            cfc_logger.debug("Sending ImageUploadWriteRequest")
+            # Send the data as a multicast downlink
+            await self.send_multicast(data)
+        else:
+            # Send the data as unicast downlinks to each of the matched devices
+            for device in self._matched_devices:
+                cfc_logger.debug(f"Sending to device {device['dev_eui']}")
+                await self.send_unicast(device["dev_eui"], data, 2)
 
     @override
     async def receive(self) -> bytes:
         cfc_logger.debug("Receiving data")
-        data = await self._fuota_service.receive()
-        cfc_logger.debug(f"Received {len(data)} B")
-        return data
+        # Received unicast data from each of the matched devices - This will probably break if there are multiple devices
+        for device in self._matched_devices:
+            cfc_logger.debug(f"Receiving from device {device['dev_eui']}")
+            data = await self.receive_unicast(int(self._last_send_time), device["dev_eui"], 2, 60)
+            if data is not None:
+                cfc_logger.debug(f"Received {len(data)} B")
+                return data
+
+        cfc_logger.debug(f"No data received")
+        return bytes()
 
     @override
     async def send_and_receive(self, data: bytes) -> bytes:
         cfc_logger.debug(f"Sending and receiving {len(data)} B")
-        #TODO: Make this send an actual SMP Unicast Downlink message to the device(s), and have them respond
-        #      with an SMP Unicast Uplink message. For now, just pretend there is an actual received response
-        req_header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
-        cfc_logger.debug(f"Received {req_header}")
-        # Handle the so called MCUMgrParametersReadRequest
-        if (req_header.group_id == smphdr.GroupId.OS_MANAGEMENT
-                and req_header.command_id == CommandId.OSManagement.MCUMGR_PARAMETERS):
-            mcumgr_params_read_request = smpos.MCUMgrParametersReadRequest.loads(data)
-            cfc_logger.debug(f"Received MCUMgrParametersReadRequest: {mcumgr_params_read_request}")
-            # Create the response
-            # Make sure the response sequence number matches the request sequence number
-            response = smpos.MCUMgrParametersReadResponse(buf_size=self._mtu, buf_count=1, sequence=req_header.sequence)
-            cfc_logger.debug(f"Sending MCUMgrParametersReadResponse: {response}")
-            return response.BYTES
-        elif (req_header.group_id == smphdr.GroupId.IMAGE_MANAGEMENT
-                and req_header.command_id == CommandId.ImageManagement.UPLOAD):
-            cfc_logger.debug("Received ImageUploadWriteRequest")
-            # Special handling for the *first* ImageUploadWriteRequest
-            image_upload_write_request = smpimg.ImageUploadWriteRequest.loads(data)
-            #logger.debug(f"Received ImageUploadWriteRequest: {image_upload_write_request}")
-            cfc_logger.debug(f"ImageUploadWriteRequest.header: {image_upload_write_request.header}")
-            cfc_logger.debug(f"ImageUploadWriteRequest.sequence: {image_upload_write_request.sequence}")
-            cfc_logger.debug(f"len(ImageUploadWriteRequest.smp_data): {len(image_upload_write_request.smp_data)}")
-            cfc_logger.debug(f"len(ImageUploadWriteRequest.data): {len(image_upload_write_request.data)}")
-            cfc_logger.debug(f"ImageUploadWriteRequest.off: {image_upload_write_request.off} "
-                         f".len: {image_upload_write_request.len} "
-                         f".upgrade: {image_upload_write_request.upgrade}")
-            # Check to see if this is the first block being transmitted
-            if image_upload_write_request.off == 0:
-                self._off = 0
-                self._image_size = image_upload_write_request.len
-            await self.send(data)
-            await asyncio.sleep(self._timeout_s)
-
-            # Manually update the offset
-            self._off += len(image_upload_write_request.data)
-
-            # Create the response
-            response = smpimg.ImageUploadWriteResponse(sequence=req_header.sequence, off=self._off)
-            cfc_logger.debug(f"Sending ImageBlockWriteResponse: {response}")
-            return response.BYTES
-        else:
-            raise SMPChirpstackFuotaTransportException(f"Unsupported command: {req_header}")
+        await self.send(data)
+        header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
+        self._expected_response_sequence = header.sequence
+        # Make the last send time 30 seconds *before* the current time (to fix variations in time)
+        self._last_send_time = time.time() - 30
+        return await self.receive()
 
 
     @property
