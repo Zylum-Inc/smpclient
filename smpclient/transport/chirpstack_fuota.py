@@ -547,7 +547,12 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
                     await asyncio.sleep(self._timeout_s)
             except Exception as e:
-                raise SMPChirpstackFuotaTransportException(f"Failed to get deployment status: {str(e)}")
+                # Don't raise an exception (for now). Let the higher layers fail
+                # This is because the FUOTA server can sometimes be wrong
+                # about the status of the deployment, and we should get a confirmation about
+                # this fragment upload from the (out of band) Unicast uplink anyway
+                # Belt and Suspenders...
+                cfc_logger.warning(f"Failed to get deployment status: {str(e)}")
 
         cfc_logger.info(f"Sent {len(data)} B")
         cfc_logger.info(f"Downlink stats: {downlink_stats}")
@@ -587,11 +592,11 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     @override
     async def send_and_receive(self, data: bytes) -> bytes:
         cfc_logger.debug(f"Sending and receiving {len(data)} B")
+        # Make the last send time 30 seconds *before* the current time (to fix variations in time)
+        self._last_send_time = time.time() - 30.0
         await self.send(data)
         header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
         self._expected_response_sequence = header.sequence
-        # Make the last send time 30 seconds *before* the current time (to fix variations in time)
-        self._last_send_time = time.time() - 30
         return await self.receive()
 
 
