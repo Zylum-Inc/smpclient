@@ -161,6 +161,8 @@ class SMPClient:
 
         """
 
+        logger.debug(f"Request: {request=}")
+
         try:
             async with timeout(timeout_s):
                 frame = await self._transport.send_and_receive(request.BYTES)
@@ -253,6 +255,8 @@ class SMPClient:
             yield response.off
         else:
             assert_never(response)  # pragma: no cover
+
+        logger.debug(f"off=0 Upload response: {response=}")
 
         # send chunks until the SMP server reports that the offset is at the end of the image
         while response.off != len(image):

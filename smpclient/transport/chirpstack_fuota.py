@@ -306,7 +306,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     @staticmethod
     def check_status_response(status_response: dict, downlink_stats: ChirpstackFuotaDownlinkStats) -> bool:
         deployment_completed = False
-        if status_response["frag_status_completed_at"] > 0:
+        if status_response["enqueue_completed_at"] > 0:
             device_logs_test_count = 0
             completed_devices = 0
             for device_status in status_response["device_status"]:
@@ -556,7 +556,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
         cfc_logger.info(f"Sent {len(data)} B")
         cfc_logger.info(f"Downlink stats: {downlink_stats}")
-        cfc_logger.info(f"Effective Data Rate: { len(data) / downlink_stats._total_time:.4f} B/s")
+        if downlink_stats._total_time > 0:
+            cfc_logger.info(f"Effective Data Rate: { len(data) / downlink_stats._total_time:.4f} B/s")
 
     @override
     async def send(self, data: bytes) -> None:
@@ -581,7 +582,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         # Received unicast data from each of the matched devices - This will probably break if there are multiple devices
         for device in self._matched_devices:
             cfc_logger.debug(f"Receiving from device {device['dev_eui']}")
-            data = await self.receive_unicast(int(self._last_send_time), device["dev_eui"], 2, 60)
+            data = await self.receive_unicast(int(self._last_send_time), device["dev_eui"], 2, 180)
             if data is not None:
                 cfc_logger.debug(f"Received {len(data)} B")
                 return data
