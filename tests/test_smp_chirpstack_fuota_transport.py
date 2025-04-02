@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import math
 import random
 import time
@@ -25,7 +26,10 @@ from smpclient.transport.chirpstack_fuota import (
     SMPChirpstackFuotaConnectionError,
     ChirpstackFuotaMulticastGroupTypes,
     ChirpstackFuotaDownlinkSpeed,
-    chirpstack_fuota_configurations
+    chirpstack_fuota_configurations,
+    ChirpstackFuotaMulticastGroupTypes,
+    ChirpstackFuotaDownlinkSpeed,
+    ChirpstackFuotaDownlinkStats
 )
 
 logging.basicConfig(level=logging.DEBUG)
@@ -38,7 +42,7 @@ class MockChirpstackFuotaService:
 
 def test_default_constructor() -> None:
     t = SMPChirpstackFuotaTransport()
-    assert t.mtu == 2560
+    assert t.mtu == 2048
     assert t._multicast_group_type == LoraBasicsClassNames.CLASS_C
     assert t._multicast_region == ChirpstackFuotaRegionNames.US_915
     assert t._chirpstack_server_addr == "localhost:8080"
@@ -49,8 +53,168 @@ def test_default_constructor() -> None:
 
 def test_class_c_constructor() -> None:
     t = SMPChirpstackFuotaTransport(multicast_group_type=LoraBasicsClassNames.CLASS_C)
-    assert t.mtu == 2560
+    assert t.mtu == 2048
     assert t._multicast_group_type == LoraBasicsClassNames.CLASS_C
+
+def test_get_multicast_timeout_seconds() -> None:
+    t = SMPChirpstackFuotaTransport(multicast_group_type=ChirpstackFuotaMulticastGroupTypes.CLASS_C,
+                                    downlink_speed=ChirpstackFuotaDownlinkSpeed.DL_SLOW)
+    assert t.get_multicast_timeout_seconds(ChirpstackFuotaMulticastGroupTypes.CLASS_C, ChirpstackFuotaDownlinkSpeed.DL_SLOW) == 361
+    assert t.get_multicast_timeout_seconds(ChirpstackFuotaMulticastGroupTypes.CLASS_B, ChirpstackFuotaDownlinkSpeed.DL_SLOW) == 4246
+
+def test_check_status_response():
+    """
+    Test the check_status_response method to ensure it raises exceptions correctly.
+    """
+    t = SMPChirpstackFuotaTransport()
+
+    # JSON string representation of the status_response
+    json_string = '''{
+        "created_at": 1743567559,
+        "updated_at": 1743568006,
+        "mc_group_setup_completed_at": 1743567564,
+        "mc_session_completed_at": 1743567572,
+        "frag_session_setup_completed_at": 1743567570,
+        "enqueue_completed_at": 1743567616,
+        "frag_status_completed_at": 1743568006,
+        "device_status": [{
+            "dev_eui": "9eef3ebb6a791a18",
+            "created_at": 1743567559,
+            "updated_at": 1743567572,
+            "mc_group_setup_completed_at": 1743567564,
+            "mc_session_completed_at": 1743567572,
+            "frag_session_setup_completed_at": 1743567570,
+            "frag_status_completed_at": 0,
+            "logs": [{
+                "created_at": 1743567559,
+                "f_port": 200,
+                "command": "McGroupSetupReq",
+                "fields": {
+                    "max_mc_fcnt": "4294967295",
+                    "mc_group_id": "0",
+                    "mc_key_encrypted": "5dd2bb08d023247efbc4623a23eb0552",
+                    "mc_addr": "f352a222",
+                    "min_mc_fcnt": "0"
+                }
+            }, {
+                "created_at": 1743567564,
+                "f_port": 200,
+                "command": "McGroupSetupAns",
+                "fields": {
+                    "mc_group_id": "0",
+                    "id_error": "false"
+                }
+            }, {
+                "created_at": 1743567564,
+                "f_port": 201,
+                "command": "FragSessionSetupReq",
+                "fields": {
+                    "frag_size": "64",
+                    "nb_frag": "32",
+                    "padding": "0",
+                    "descriptor": "00000000",
+                    "frag_index": "0",
+                    "fragmentation_matrix": "0",
+                    "McGroupBitMask": "1",
+                    "block_ack_delay": "1"
+                }
+            }, {
+                "created_at": 1743567570,
+                "f_port": 201,
+                "command": "FragSessionSetupAns",
+                "fields": {
+                    "encoding_unsupported": "false",
+                    "wrong_descriptor": "false",
+                    "not_enough_memory": "false",
+                    "frag_index": "0",
+                    "frag_session_index_not_supported": "false"
+                }
+            }, {
+                "created_at": 1743567570,
+                "f_port": 200,
+                "command": "McClassCSessionReq",
+                "fields": {
+                    "session_time": "1427602833",
+                    "mc_group_id": "0",
+                    "session_time_out": "8",
+                    "dr": "9",
+                    "dl_frequency": "923300000"
+                }
+            }, {
+                "created_at": 1743567572,
+                "f_port": 200,
+                "command": "McClassCSessionAns",
+                "fields": {
+                    "dr_error": "false",
+                    "freq_error": "false",
+                    "mc_group_id": "0",
+                    "mc_group_undefined": "false"
+                }
+            }, {
+                "created_at": 1743567871,
+                "f_port": 201,
+                "command": "FragSessionStatusReq",
+                "fields": {
+                    "participants": "true",
+                    "frag_index": "0"
+                }
+            }, {
+                "created_at": 1743567882,
+                "f_port": 201,
+                "command": "FragSessionStatusAns",
+                "fields": {
+                    "missing_frag": "1",
+                    "nb_frag_received": "33",
+                    "not_enough_matrix_memory": "false",
+                    "frag_index": "0"
+                }
+            }, {
+                "created_at": 1743567916,
+                "f_port": 201,
+                "command": "FragSessionStatusReq",
+                "fields": {
+                    "participants": "true",
+                    "frag_index": "0"
+                }
+            }, {
+                "created_at": 1743567951,
+                "f_port": 201,
+                "command": "FragSessionStatusAns",
+                "fields": {
+                    "missing_frag": "1",
+                    "nb_frag_received": "33",
+                    "not_enough_matrix_memory": "false",
+                    "frag_index": "0"
+                }
+            }, {
+                "created_at": 1743567961,
+                "f_port": 201,
+                "command": "FragSessionStatusReq",
+                "fields": {
+                    "participants": "true",
+                    "frag_index": "0"
+                }
+            }, {
+                "created_at": 1743567987,
+                "f_port": 201,
+                "command": "FragSessionStatusAns",
+                "fields": {
+                    "missing_frag": "1",
+                    "nb_frag_received": "33",
+                    "not_enough_matrix_memory": "false",
+                    "frag_index": "0"
+                }
+            }]
+        }]
+    }'''
+
+    # Load the JSON object into the status_response variable
+    status_response = json.loads(json_string)
+
+    downlink_stats = ChirpstackFuotaDownlinkStats()
+
+    assert t.check_status_response(status_response, downlink_stats) is True
+
 
 @pytest.mark.asyncio
 @patch("smpclient.transport.chirpstack_fuota.ApplicationService")

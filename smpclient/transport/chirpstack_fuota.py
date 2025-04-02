@@ -304,12 +304,28 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             raise SMPChirpstackFuotaTransportException(f"Failed to get deployment status: {str(e)}")
 
     @staticmethod
+    def get_multicast_timeout_seconds(group_type: ChirpstackFuotaMulticastGroupTypes,
+                                       downlink_speed: ChirpstackFuotaDownlinkSpeed) -> int:
+        timeout_exponent = chirpstack_fuota_configurations[group_type][downlink_speed]["multicast_timeout"]
+
+        timeout_seconds = pow(2, timeout_exponent)
+        if group_type == ChirpstackFuotaMulticastGroupTypes.CLASS_B:
+            timeout_seconds = timeout_seconds * 128
+
+        timeout_seconds = timeout_seconds + chirpstack_fuota_configurations[group_type][downlink_speed]["unicast_timeout"]
+
+        timeout_seconds = timeout_seconds + 60 # Add 60 seconds for good measure
+
+        return timeout_seconds
+
+    @staticmethod
     def check_status_response(status_response: dict, downlink_stats: ChirpstackFuotaDownlinkStats) -> bool:
         deployment_completed = False
-        if status_response["enqueue_completed_at"] > 0:
+        if status_response["frag_status_completed_at"] > 0:
             device_logs_test_count = 0
             completed_devices = 0
             for device_status in status_response["device_status"]:
+                cfc_logger.debug(f"Device status: {device_status}")
                 frag_session_setup_req = False
                 frag_session_status_ans = False
                 nb_frag_sent = 0
@@ -325,6 +341,12 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                         missing_frag = int(log_entry['fields']['missing_frag'])
 
                 device_logs_test_count += 1
+                cfc_logger.debug(f"Device logs test count: {device_logs_test_count}")
+                cfc_logger.debug(f"frag_session_setup_req: {frag_session_setup_req}, "
+                                 f"frag_session_status_ans: {frag_session_status_ans}, "
+                                 f"nb_frag_sent: {nb_frag_sent}, "
+                                 f"nb_frag_received: {nb_frag_received}, "
+                                 f"missing_frag: {missing_frag}")
                 # Hack: To handle a bad bug in the Semtech LBM 4.5.X code,
                 # whereby the code reports a *phantom* missing fragment, even for a
                 # successful FUOTA session where *no* fragments were lost
@@ -332,6 +354,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                         and (nb_frag_sent == nb_frag_received
                              or (nb_frag_sent <= nb_frag_received and missing_frag == 0))):
                     completed_devices += 1
+                cfc_logger.debug(f"completed_devices: {completed_devices}")
 
             if completed_devices > 0:
                 downlink_stats.update_downlink_stats(status_response)
@@ -529,8 +552,10 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             deployment_completed = False
 
-            # logger.debug(f"Sleeping for 30 seconds")
-            # await asyncio.sleep(30)
+            timeout_seconds = self.get_multicast_timeout_seconds(self._multicast_group_type, self._downlink_speed)
+
+            cfc_logger.debug(f"Sleeping for {timeout_seconds} seconds")
+            await asyncio.sleep(timeout_seconds)
 
             cfc_logger.debug(f"Getting deployment status")
 
