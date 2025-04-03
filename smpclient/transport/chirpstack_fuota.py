@@ -592,6 +592,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
         if (req_header.group_id == smphdr.GroupId.IMAGE_MANAGEMENT
                 and req_header.command_id == CommandId.ImageManagement.UPLOAD):
+            # First, extract the offset value (in case we fail to get a response)
+            image_upload_write_request = smpimg.ImageUploadWriteRequest.loads(data)
+            self._off = image_upload_write_request.off
             cfc_logger.debug("Sending ImageUploadWriteRequest")
             # Send the data as a multicast downlink
             await self.send_multicast(data)
@@ -613,7 +616,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 return data
 
         cfc_logger.debug(f"No data received")
-        return bytes()
+        raise SMPChirpstackFuotaTransportException(f"No data received")
+
 
     @override
     async def send_and_receive(self, data: bytes) -> bytes:
@@ -623,7 +627,16 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         await self.send(data)
         header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
         self._expected_response_sequence = header.sequence
-        return await self.receive()
+        try:
+            return await self.receive()
+        except SMPChirpstackFuotaTransportException as e:
+            cfc_logger.error(f"Failed to receive data: {str(e)}")
+            cfc_logger.debug("Sending ImageUploadWriteResponse with the same offset as the request")
+            cfc_logger.debug(f"{self._expected_response_sequence=}")
+            cfc_logger.debug(f"{self._off=}")
+            # Create the response
+            response = smpimg.ImageUploadWriteResponse(sequence=self._expected_response_sequence, off=self._off)
+            return response.BYTES
 
 
     @property

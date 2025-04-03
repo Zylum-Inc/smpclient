@@ -17,6 +17,10 @@ import logging
 from chirpstack_fuota_client.api.fuota import FuotaService, FuotaUtils
 from google.protobuf.internal.well_known_types import Timestamp
 
+from smp import header as smpheader
+from smp import image_management as smpimg
+
+from smpclient.requests.image_management import ImageUploadWrite
 from smpclient.requests.os_management import EchoWrite
 from smpclient.transport.chirpstack_fuota import (
     LoraBasicsClassNames,
@@ -29,7 +33,8 @@ from smpclient.transport.chirpstack_fuota import (
     chirpstack_fuota_configurations,
     ChirpstackFuotaMulticastGroupTypes,
     ChirpstackFuotaDownlinkSpeed,
-    ChirpstackFuotaDownlinkStats
+    ChirpstackFuotaDownlinkStats,
+    SMPChirpstackFuotaTransportException
 )
 
 logging.basicConfig(level=logging.DEBUG)
@@ -215,6 +220,27 @@ def test_check_status_response():
 
     assert t.check_status_response(status_response, downlink_stats) is True
 
+@pytest.mark.asyncio
+async def test_send_and_receive_timeout() -> None:
+    t = SMPChirpstackFuotaTransport()
+    req_header = ImageUploadWrite(off=2345,
+                        data=b"",
+                        len=54120,
+                        image=1,
+                        upgrade=None)
+
+    t.send_multicast = AsyncMock()  # type: ignore
+    t.receive = AsyncMock(side_effect=SMPChirpstackFuotaTransportException("Failed to receive data"))  # type: ignore
+    frame = await t.send_and_receive(req_header.BYTES)
+    t.send_multicast.assert_awaited_once()
+    t.receive.assert_awaited_once()
+
+    header = smpheader.Header.loads(frame[: smpheader.Header.SIZE])
+    response = smpimg.ImageUploadWriteResponse.loads(frame)
+    logging.debug(f"Response: {response}")
+    assert response is not None
+    assert response.off == 2345
+    assert header.sequence == req_header.sequence
 
 @pytest.mark.asyncio
 @patch("smpclient.transport.chirpstack_fuota.ApplicationService")
