@@ -26,8 +26,8 @@ intelhex = "^2.3.0"
 bleak = "^0.22.1"
 async-timeout = { version = "^4.0.3", python = "<3.11" }
 chirpstack-api = "^4.11.0"
-# chirpstack_fuota_client = { git = "https://github.com/Zylum-Inc/chirpstack-fuota-client.git"}
-chirpstack_fuota_client = { path = "../chirpstack-fuota-client" }
+chirpstack_fuota_client = { git = "https://github.com/Zylum-Inc/chirpstack-fuota-client.git"}
+# chirpstack_fuota_client = { path = "../chirpstack-fuota-client" }
 requests = "^2.29.0"
 
 [tool.poetry.group.dev.dependencies]
