@@ -505,10 +505,15 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     else:
                         cfc_logger.debug(f"Sequence number mismatch: {header.sequence} != {self._expected_response_sequence}")
                         header = None
+                        continue
                 elif len(payload_bytes) > message_length:
                     raise SMPChirpstackFuotaTransportException(
                         f"Received too much data: {payload_bytes=}"
                     )
+            
+            await asyncio.sleep(5)
+            continue
+
 
         return None
 
@@ -610,7 +615,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         # Received unicast data from each of the matched devices - This will probably break if there are multiple devices
         for device in self._matched_devices:
             cfc_logger.debug(f"Receiving from device {device['dev_eui']}")
-            data = await self.receive_unicast(int(self._last_send_time), device["dev_eui"], 2, 180)
+            data = await self.receive_unicast(int(self._last_send_time), device["dev_eui"], 2, 360)
             if data is not None:
                 cfc_logger.debug(f"Received {len(data)} B")
                 return data
