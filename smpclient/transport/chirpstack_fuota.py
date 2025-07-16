@@ -447,7 +447,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             # Get the messages
             uplinks = self.get_messages_by_dev_id(dev_id, 'uplink', fport, after_epoch)
 
-            sorted_uplinks = sorted(uplinks,
+            sorted_uplinks = sorted(uplinks['events'],
                                      key=lambda x: datetime.fromisoformat(x['data']['time'].replace('Z', '+00:00')))
 
             if len(sorted_uplinks) == 0:
@@ -627,8 +627,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
     @override
     async def send_and_receive(self, data: bytes) -> bytes:
         cfc_logger.debug(f"Sending and receiving {len(data)} B")
-        # Make the last send time 30 seconds *before* the current time (to fix variations in time)
-        self._last_send_time = time.time() - 30.0
+        # Make the last send time 60 seconds *before* the current time (to fix variations in time)
+        self._last_send_time = time.time() - 60.0
         await self.send(data)
         header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
         self._expected_response_sequence = header.sequence
