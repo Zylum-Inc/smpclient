@@ -1,6 +1,6 @@
 [project]
 name = "smpclient"
-version = "0.0.94"
+version = "0.0.95"
 description = "Simple Management Protocol (SMP) Client for remotely managing MCU firmware"
 authors = [
     { name = "JP Hutchins", email = "jphutchins@gmail.com" },

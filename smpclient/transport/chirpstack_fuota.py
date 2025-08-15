@@ -432,6 +432,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         cfc_logger.info("Disconnected from transport")
 
     async def send_unicast(self, dev_eui: str, data: bytes, fport: int) -> None:
+        self._last_send_time = time.time() - 60.0
         cfc_logger.debug(f"Sending unicast data: {data}")
         try:
             device_service = DeviceService(
@@ -553,7 +554,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             header = smphdr.Header.loads(payload_bytes[: smphdr.Header.SIZE])
             cfc_logger.debug(f"Received {header=}")
 
-
             message_length = header.length + header.SIZE
             cfc_logger.debug(f"Waiting for the rest of the {message_length} byte response")
 
@@ -579,8 +579,13 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     payload_bytes = more_payload_bytes
                     cfc_logger.debug(f"Received new {header=}")
 
-                    if header.group_id != self._expected_response_group_id or header.command_id != self._expected_response_command_id:
-                        cfc_logger.debug(f"Received response with unexpected group_id or command_id: {header.group_id} != {self._expected_response_group_id} or {header.command_id} != {self._expected_response_command_id}")
+                    if (
+                        header.group_id != self._expected_response_group_id
+                        or header.command_id != self._expected_response_command_id
+                    ):
+                        cfc_logger.debug(
+                            f"Received response with unexpected group_id or command_id: {header.group_id} != {self._expected_response_group_id} or {header.command_id} != {self._expected_response_command_id}"
+                        )
                         continue
 
                     message_length = header.length + header.SIZE
