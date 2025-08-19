@@ -486,7 +486,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             return cloud_lns_response.json()
 
         raise SMPChirpstackFuotaTransportException(f"Failed to get messages for device {dev_id}")
-    
 
     def _validate_device_id(self, dev_eui: str) -> str:
         """Validate that the device EUI has a valid device ID."""
@@ -515,27 +514,29 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
     def _filter_unprocessed_uplinks(self, sorted_uplinks: list) -> tuple[list, int]:
         """Filter out already processed uplinks and return the latest timestamp.
-        
+
         Returns:
             Tuple of (filtered_uplinks, latest_timestamp_epoch)
         """
         filtered_uplinks = []
         latest_timestamp_epoch = 0
-        
+
         for uplink in sorted_uplinks:
             timestamp_str = uplink['data']['time']
             # Convert timestamp to epoch for comparison
             timestamp_dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
             timestamp_epoch = int(timestamp_dt.timestamp())
-            
+
             # Skip if already processed
             if timestamp_str in self._processed_uplink_timestamps:
-                cfc_logger.debug(f"Skipping already processed uplink with timestamp: {timestamp_str}")
+                cfc_logger.debug(
+                    f"Skipping already processed uplink with timestamp: {timestamp_str}"
+                )
                 continue
-                
+
             filtered_uplinks.append(uplink)
             latest_timestamp_epoch = max(latest_timestamp_epoch, timestamp_epoch)
-        
+
         return filtered_uplinks, latest_timestamp_epoch
 
     def _mark_uplinks_as_processed(self, uplinks: list) -> None:
@@ -567,17 +568,17 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         if len(payload_bytes) < smphdr.Header.SIZE:
             cfc_logger.error(f"Buffer contents not big enough for SMP header: {payload_bytes!r}")
             return False
-        
+
         if len(payload_bytes) > 0:
             first_byte = payload_bytes[0]
             op_value = first_byte & 0x07  # Extract OP field (bits 0-2)
             if op_value > 3:  # Valid OP values are 0-3
                 cfc_logger.warning(
-                f"Received non-SMP data (invalid OP {op_value}): {payload_bytes!r}"
+                    f"Received non-SMP data (invalid OP {op_value}): {payload_bytes!r}"
                 )
                 return False
 
-        return True    
+        return True
 
     def _is_valid_response_header(self, header: smphdr.Header) -> bool:
         """Check if the header matches expected response parameters."""
@@ -589,7 +590,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
     def _assemble_message_from_uplinks(self, sorted_uplinks: list) -> tuple[bytes | None, list]:
         """Assemble a complete SMP message from sorted uplinks.
-        
+
         Returns:
             Tuple of (complete_message, remaining_uplinks)
         """
@@ -604,8 +605,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
         # Process all uplinks uniformly
         for uplink in sorted_uplinks:
+            cfc_logger.debug(f"Processing uplink with fCnt: {uplink['data']['fCnt']}")
             uplink_payload_bytes = base64.b64decode(uplink["data"]["data"])
-            
+
             # If we don't have a valid header yet, try to get one from this uplink
             if header is None:
                 if not self._validate_smp_header(uplink_payload_bytes):
@@ -614,7 +616,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     payload_bytes = b""
                     continue
 
-                header = smphdr.Header.loads(uplink_payload_bytes[:smphdr.Header.SIZE])
+                header = smphdr.Header.loads(uplink_payload_bytes[: smphdr.Header.SIZE])
                 payload_bytes = uplink_payload_bytes
                 cfc_logger.debug(f"Received {header=}")
 
@@ -648,24 +650,26 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         # If we get here, we couldn't assemble a complete message
         # Return all uplinks as remaining for next iteration
         return None, remaining_uplinks
-    
+
     async def receive_unicast(
         self, after_epoch: int, dev_eui: str, fport: int, timeout_s: float
     ) -> bytes | None:
         """Receive unicast data from a device, assembling complete SMP messages from uplinks.
-        
+
         Args:
             after_epoch: Timestamp after which to look for messages
             dev_eui: Device EUI to receive from
             fport: Port number to filter messages
             timeout_s: Timeout in seconds
-            
+
         Returns:
             Complete SMP message bytes or None if timeout
         """
         start_time = time.time()
         current_after_epoch = after_epoch
-        cfc_logger.debug(f"Receiving unicast data from device {dev_eui}, after {after_epoch} seconds")
+        cfc_logger.debug(
+            f"Receiving unicast data from device {dev_eui}, after {after_epoch} seconds"
+        )
 
         # Validate device ID
         dev_id = self._validate_device_id(dev_eui)
@@ -685,40 +689,44 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             # Get pending uplinks from previous iterations
             pending_uplinks = self._get_pending_uplinks(dev_eui)
-            
+
             # Get and sort new uplinks
             sorted_uplinks = self._get_sorted_uplinks(dev_id, fport, current_after_epoch)
-            
+
             # Filter out already processed uplinks and get latest timestamp
-            filtered_uplinks, latest_timestamp_epoch = self._filter_unprocessed_uplinks(sorted_uplinks)
-            
+            filtered_uplinks, latest_timestamp_epoch = self._filter_unprocessed_uplinks(
+                sorted_uplinks
+            )
+
             # Combine pending and new uplinks
             all_uplinks = pending_uplinks + filtered_uplinks
-            
+
             if not all_uplinks:
                 cfc_logger.debug("No messages received yet")
                 await asyncio.sleep(5)
                 continue
 
-            cfc_logger.debug(f"Processing {len(all_uplinks)} total uplinks ({len(pending_uplinks)} pending + {len(filtered_uplinks)} new)")
+            cfc_logger.debug(
+                f"Processing {len(all_uplinks)} total uplinks ({len(pending_uplinks)} pending + {len(filtered_uplinks)} new)"
+            )
 
             # Try to assemble a complete message
             complete_message, remaining_uplinks = self._assemble_message_from_uplinks(all_uplinks)
-            
+
             # Mark new uplinks as processed (but not pending ones)
             if filtered_uplinks:
                 self._mark_uplinks_as_processed(filtered_uplinks)
-            
+
             # Update the after_epoch to the latest timestamp we've seen
             if latest_timestamp_epoch > current_after_epoch:
                 current_after_epoch = latest_timestamp_epoch
                 cfc_logger.debug(f"Updated after_epoch to: {current_after_epoch}")
-            
+
             if complete_message is not None:
                 # Successfully assembled a message, clear pending uplinks
                 self._clear_pending_uplinks(dev_eui)
                 return complete_message
-            
+
             # Couldn't assemble a complete message, save remaining uplinks for next iteration
             if remaining_uplinks:
                 self._add_pending_uplinks(dev_eui, remaining_uplinks)
@@ -1004,13 +1012,14 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._last_send_time = time.time() - 60.0
         # Inject a random sequence number into the header
         import random
+
         random_sequence = random.randint(0, 255)
-        
+
         # Parse the existing header
-        header = smphdr.Header.loads(data[:smphdr.Header.SIZE])
+        header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
 
         self._expected_response_sequence = header.sequence
-        
+
         # Create a new header with the random sequence
         new_header = smphdr.Header(
             op=header.op,
@@ -1019,17 +1028,17 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             length=header.length,
             group_id=header.group_id,
             sequence=random_sequence,
-            command_id=header.command_id
+            command_id=header.command_id,
         )
 
         cfc_logger.debug(f"Injecting new header {new_header}")
-        
+
         # Replace the header in the data
-        modified_data = new_header.BYTES + data[smphdr.Header.SIZE:]
-        
+        modified_data = new_header.BYTES + data[smphdr.Header.SIZE :]
+
         # Update expected response random sequence
         self._expected_response_random_sequence = random_sequence
-        
+
         await self.send(modified_data)
 
         try:
@@ -1043,10 +1052,10 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 length=received_header.length,
                 group_id=received_header.group_id,
                 sequence=self._expected_response_sequence,
-                command_id=received_header.command_id
+                command_id=received_header.command_id,
             )
             cfc_logger.debug(f"Modified received header {modified_received_header}")
-            return modified_received_header.BYTES + data[smphdr.Header.SIZE:]
+            return modified_received_header.BYTES + data[smphdr.Header.SIZE :]
         except SMPChirpstackFuotaTransportException as e:
             cfc_logger.error(f"Failed to receive data: {str(e)}")
             cfc_logger.debug("Sending ImageUploadWriteResponse with the same offset as the request")
