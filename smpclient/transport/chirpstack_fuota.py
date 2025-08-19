@@ -612,7 +612,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     cfc_logger.debug(f"Received non-SMP data: {uplink_payload_bytes!r}")
                     header = None
                     payload_bytes = b""
-                    remaining_uplinks.append(uplink)
                     continue
 
                 header = smphdr.Header.loads(uplink_payload_bytes[:smphdr.Header.SIZE])
@@ -623,7 +622,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     cfc_logger.debug(f"Received response with unexpected header: {header!r}")
                     header = None
                     payload_bytes = b""
-                    remaining_uplinks.append(uplink)
                     continue
 
                 message_length = header.length + header.SIZE
@@ -631,6 +629,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     f"Waiting for the rest of the {message_length} byte response, "
                     f"received {len(payload_bytes)} bytes"
                 )
+
+                remaining_uplinks.append(uplink)
+
             else:
                 cfc_logger.debug(f"Received more payload: {uplink_payload_bytes!r}")
                 payload_bytes += uplink_payload_bytes
@@ -646,7 +647,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
         # If we get here, we couldn't assemble a complete message
         # Return all uplinks as remaining for next iteration
-        return None, sorted_uplinks
+        return None, remaining_uplinks
     
     async def receive_unicast(
         self, after_epoch: int, dev_eui: str, fport: int, timeout_s: float
