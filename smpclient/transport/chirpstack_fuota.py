@@ -562,23 +562,22 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             del self._pending_uplinks[dev_eui]
             cfc_logger.debug(f"Cleared pending uplinks for {dev_eui}")
 
-    def _validate_smp_header(self, payload_bytes: bytes) -> None:
+    def _validate_smp_header(self, payload_bytes: bytes) -> bool:
         """Validate that the payload contains a valid SMP header."""
         if len(payload_bytes) < smphdr.Header.SIZE:
-            raise SMPChirpstackFuotaTransportException(
-                f"Buffer contents not big enough for SMP header: {payload_bytes!r}"
-            )
-
+            cfc_logger.error(f"Buffer contents not big enough for SMP header: {payload_bytes!r}")
+            return False
+        
         if len(payload_bytes) > 0:
             first_byte = payload_bytes[0]
             op_value = first_byte & 0x07  # Extract OP field (bits 0-2)
             if op_value > 3:  # Valid OP values are 0-3
                 cfc_logger.warning(
-                    f"Received non-SMP data (invalid OP {op_value}): {payload_bytes!r}"
+                f"Received non-SMP data (invalid OP {op_value}): {payload_bytes!r}"
                 )
-                raise SMPChirpstackFuotaTransportException(
-                    f"Device sent non-SMP data instead of SMP response: {payload_bytes!r}"
-                )
+                return False
+
+        return True    
 
     def _is_valid_response_header(self, header: smphdr.Header) -> bool:
         """Check if the header matches expected response parameters."""
@@ -597,68 +596,49 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         if not sorted_uplinks:
             return None, []
 
-        # Start with the first uplink
-        payload_bytes = base64.b64decode(sorted_uplinks[0]["data"]["data"])
-        self._validate_smp_header(payload_bytes)
-        
-        header = smphdr.Header.loads(payload_bytes[:smphdr.Header.SIZE])
-        cfc_logger.debug(f"Received {header=}")
-        
-        message_length = header.length + header.SIZE
-        cfc_logger.debug(f"Waiting for the rest of the {message_length} byte response, received {len(payload_bytes)} bytes")
+        # Initialize variables for message assembly
+        header: smphdr.Header | None = None
+        payload_bytes = b""
+        message_length = 0
+        remaining_uplinks: list = []
 
-        # Check if we have a complete message in the first uplink
-        if len(payload_bytes) == message_length:
-            cfc_logger.debug(f"Received complete message in first uplink: {payload_bytes!r}")
-            if self._is_valid_response_header(header):
-                return payload_bytes, sorted_uplinks[1:]  # Return remaining uplinks
-            else:
-                cfc_logger.debug(f"Received response with unexpected group_id or command_id: "
-                                 f"{header.group_id} != {self._expected_response_group_id} or "
-                                 f"{header.command_id} != {self._expected_response_command_id}, continuing to process remaining uplinks")
-                return None, sorted_uplinks[1:]
-
-        # Process additional uplinks to assemble the complete message
-        remaining_uplinks = []
-        for uplink in sorted_uplinks[1:]:
-            more_payload_bytes = base64.b64decode(uplink["data"]["data"])
+        # Process all uplinks uniformly
+        for uplink in sorted_uplinks:
+            uplink_payload_bytes = base64.b64decode(uplink["data"]["data"])
             
             # If we don't have a valid header yet, try to get one from this uplink
             if header is None:
-                self._validate_smp_header(more_payload_bytes)
-                header = smphdr.Header.loads(more_payload_bytes[:smphdr.Header.SIZE])
-                payload_bytes = more_payload_bytes
-                cfc_logger.debug(f"Received new {header=}")
+                if not self._validate_smp_header(uplink_payload_bytes):
+                    cfc_logger.debug(f"Received non-SMP data: {uplink_payload_bytes!r}")
+                    header = None
+                    payload_bytes = b""
+                    remaining_uplinks.append(uplink)
+                    continue
 
-                # Validate header matches expected response
-                if not (header.group_id == self._expected_response_group_id and 
-                       header.command_id == self._expected_response_command_id):
-                    cfc_logger.debug(
-                        f"Received response with unexpected group_id or command_id: "
-                        f"{header.group_id} != {self._expected_response_group_id} or "
-                        f"{header.command_id} != {self._expected_response_command_id}"
-                    )
+                header = smphdr.Header.loads(uplink_payload_bytes[:smphdr.Header.SIZE])
+                payload_bytes = uplink_payload_bytes
+                cfc_logger.debug(f"Received {header=}")
+
+                if not self._is_valid_response_header(header):
+                    cfc_logger.debug(f"Received response with unexpected header: {header!r}")
+                    header = None
+                    payload_bytes = b""
                     remaining_uplinks.append(uplink)
                     continue
 
                 message_length = header.length + header.SIZE
-                cfc_logger.debug(f"Waiting for the rest of the new {message_length} byte response")
+                cfc_logger.debug(
+                    f"Waiting for the rest of the {message_length} byte response, "
+                    f"received {len(payload_bytes)} bytes"
+                )
             else:
-                cfc_logger.debug(f"Received more payload: {more_payload_bytes!r}")
-                payload_bytes += more_payload_bytes
+                cfc_logger.debug(f"Received more payload: {uplink_payload_bytes!r}")
+                payload_bytes += uplink_payload_bytes
 
             # Check if we have received the full message
             if len(payload_bytes) == message_length:
                 cfc_logger.debug(f"Received full message: {payload_bytes!r}")
-                if self._is_valid_response_header(header):
-                    return payload_bytes, remaining_uplinks
-                else:
-                    cfc_logger.debug(
-                        f"Sequence number mismatch: {header.sequence} != {self._expected_response_random_sequence}"
-                    )
-                    header = None
-                    remaining_uplinks.append(uplink)
-                    continue
+                return payload_bytes, remaining_uplinks
             elif len(payload_bytes) > message_length:
                 raise SMPChirpstackFuotaTransportException(
                     f"Received too much data: {payload_bytes!r}"
@@ -667,7 +647,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         # If we get here, we couldn't assemble a complete message
         # Return all uplinks as remaining for next iteration
         return None, sorted_uplinks
-
+    
     async def receive_unicast(
         self, after_epoch: int, dev_eui: str, fport: int, timeout_s: float
     ) -> bytes | None:

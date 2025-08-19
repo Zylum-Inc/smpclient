@@ -467,7 +467,7 @@ async def test_send_and_receive_image_state_read(
 
     # Mock the get_messages_by_dev_id method to return the provided JSON response
     cloud_lns_response_json = {
-        "total": 3,
+        "total": 4,
         "offset": 0,
         "limit": 10,
         "events": [
@@ -655,6 +655,69 @@ async def test_send_and_receive_image_state_read(
                 "captured_at": "2025-08-18T15:55:51.897707",
                 "created_at": "2025-08-18T15:55:51.897707",
                 "updated_at": "2025-08-18T15:55:51.897707",
+            },
+            {
+                "id": "36b6be39-a669-4df4-9db2-a40d31bac9cd",
+                "device_id": "106e0ed6-3528-4f10-a8fd-bac8da3587d3",
+                "lns_id": "aea1f3d6-bc17-4162-b5c1-ddf71c8811ed",
+                "type": "uplink",
+                "data": {
+                    "dr": 3,
+                    "adr": True,
+                    "data": "dmX0aXBlcm1hbmVudPT//2tzcGxpdFN0YXR1cwD/",
+                    "fCnt": 13,
+                    "time": "2025-08-18T15:54:21.854+00:00",
+                    "fPort": 2,
+                    "rxInfo": [
+                        {
+                            "snr": 9.5,
+                            "rssi": -83,
+                            "board": 3,
+                            "nsTime": "2025-08-18T15:54:21.874504759+00:00",
+                            "channel": 3,
+                            "context": "LYeU+w==",
+                            "location": {
+                                "altitude": 3,
+                                "latitude": 42.38043975830078,
+                                "longitude": -71.27425384521484,
+                            },
+                            "uplinkId": 30746,
+                            "crcStatus": "CRC_OK",
+                            "gatewayId": "7076ff00550806e4",
+                            "timeSinceGpsEpoch": "1439567799.854s",
+                        }
+                    ],
+                    "txInfo": {
+                        "frequency": 904500000,
+                        "modulation": {
+                            "lora": {
+                                "codeRate": "CR_4_5",
+                                "bandwidth": 125000,
+                                "spreadingFactor": 7,
+                            }
+                        },
+                    },
+                    "devAddr": "00453524",
+                    "confirmed": True,
+                    "deviceInfo": {
+                        "tags": {},
+                        "devEui": "613ded3caba44edd",
+                        "tenantId": "649cca72-f6eb-4f50-b0c7-918d018b9220",
+                        "deviceName": "tas-cli 3B8E80F5",
+                        "tenantName": "TAS managed organization",
+                        "applicationId": "28c978af-212a-4e48-87af-b4655e650b79",
+                        "applicationName": "TAS managed application",
+                        "deviceProfileId": "bf6dbba9-d296-4621-9f3f-e1e43757fbf6",
+                        "deviceProfileName": "US_915_Class_C",
+                        "deviceClassEnabled": "CLASS_C",
+                    },
+                    "regionConfigId": "us915_1",
+                    "deduplicationId": "b8586a65-5c61-4565-ab14-7e8030a4a8c0",
+                },
+                "metadata": {},
+                "captured_at": "2025-08-18T15:54:22.087220",
+                "created_at": "2025-08-18T15:54:22.087220",
+                "updated_at": "2025-08-18T15:54:22.087220",
             },
         ],
     }
