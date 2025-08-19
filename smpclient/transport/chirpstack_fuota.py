@@ -554,9 +554,23 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         """Add uplinks to the pending list for a device."""
         if dev_eui not in self._pending_uplinks:
             self._pending_uplinks[dev_eui] = []
-        self._pending_uplinks[dev_eui].extend(uplinks)
-        cfc_logger.debug(f"Added {len(uplinks)} uplinks to pending list for {dev_eui}")
-
+        
+        # Get existing fCnt values to avoid duplicates
+        existing_fcnts = {uplink['data']['fCnt'] for uplink in self._pending_uplinks[dev_eui]}
+        
+        # Filter out uplinks with duplicate fCnt values
+        unique_uplinks = []
+        for uplink in uplinks:
+            fcnt = uplink['data']['fCnt']
+            if fcnt not in existing_fcnts:
+                unique_uplinks.append(uplink)
+                existing_fcnts.add(fcnt)
+            else:
+                cfc_logger.debug(f"Skipping duplicate uplink with fCnt {fcnt} for {dev_eui}")
+        
+        self._pending_uplinks[dev_eui].extend(unique_uplinks)
+        cfc_logger.debug(f"Added {len(unique_uplinks)} unique uplinks to pending list for {dev_eui}")
+        
     def _clear_pending_uplinks(self, dev_eui: str) -> None:
         """Clear pending uplinks for a device (when message is successfully assembled)."""
         if dev_eui in self._pending_uplinks:
