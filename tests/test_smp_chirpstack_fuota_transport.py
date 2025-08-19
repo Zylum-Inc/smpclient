@@ -402,7 +402,9 @@ async def test_send(
 @patch("smpclient.transport.chirpstack_fuota.FuotaService.__init__", return_value=None)
 @patch("smpclient.transport.chirpstack_fuota.ApplicationService")
 @patch("smpclient.transport.chirpstack_fuota.DeviceService")
+@patch.object(SMPChirpstackFuotaTransport, '_is_valid_response_header')
 async def test_send_and_receive_image_state_read(
+    mock_is_valid_response_header: MagicMock,
     mock_device_service: MagicMock,
     mock_app_service: MagicMock,
     mock_fuota_service_init: MagicMock,
@@ -442,6 +444,26 @@ async def test_send_and_receive_image_state_read(
     transport.find_dev_id_by_dev_eui = MagicMock(
         return_value="106e0ed6-3528-4f10-a8fd-bac8da3587d3"
     )
+
+    import types
+
+    from smp import header as smphdr
+
+
+    # Alternative approach using a closure to capture the transport instance
+    def create_mock_function(transport_instance: SMPChirpstackFuotaTransport) -> Callable[[smphdr.Header], bool]:
+        def mock_is_valid_response_header_impl(header: smphdr.Header) -> bool:
+            print(f"Mocking is_valid_response_header with {header=}")
+            print(f"Expected group_id: {transport_instance._expected_response_group_id}")
+            print(f"Expected command_id: {transport_instance._expected_response_command_id}")
+            # Only check group_id and command_id, ignore sequence number
+            return (
+                header.group_id == transport_instance._expected_response_group_id
+                and header.command_id == transport_instance._expected_response_command_id
+            )
+        return mock_is_valid_response_header_impl
+
+    mock_is_valid_response_header.side_effect = create_mock_function(transport)
 
     # Mock the get_messages_by_dev_id method to return the provided JSON response
     cloud_lns_response_json = {

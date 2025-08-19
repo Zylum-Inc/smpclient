@@ -260,6 +260,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._tas_api_lns_id = tas_api_lns_id
         self._last_send_time = 0.0
         self._expected_response_sequence = 0
+        self._expected_response_random_sequence = 0
         self._expected_response_group_id = 0
         self._expected_response_command_id = 0
         self._off = 0
@@ -584,7 +585,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         return (
             header.group_id == self._expected_response_group_id
             and header.command_id == self._expected_response_command_id
-            and header.sequence == self._expected_response_sequence
+            and header.sequence == self._expected_response_random_sequence
         )
 
     def _assemble_message_from_uplinks(self, sorted_uplinks: list) -> tuple[bytes | None, list]:
@@ -653,7 +654,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     return payload_bytes, remaining_uplinks
                 else:
                     cfc_logger.debug(
-                        f"Sequence number mismatch: {header.sequence} != {self._expected_response_sequence}"
+                        f"Sequence number mismatch: {header.sequence} != {self._expected_response_random_sequence}"
                     )
                     header = None
                     remaining_uplinks.append(uplink)
@@ -826,11 +827,11 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             if len(payload_bytes) == message_length:
                 cfc_logger.debug(f"Received full message: {payload_bytes}")
                 # Additionally, make sure the sequence numbers match the expected value
-                if header.sequence == self._expected_response_sequence:
+                if header.sequence == self._expected_response_randomsequence:
                     return payload_bytes
                 else:
                     cfc_logger.debug(
-                        f"Sequence number mismatch: {header.sequence} != {self._expected_response_sequence}"
+                        f"Sequence number mismatch: {header.sequence} != {self._expected_response_random_sequence}"
                     )
                     header = None
                     if len(sorted_uplinks) == 1:
@@ -1020,11 +1021,51 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         cfc_logger.debug(f"Sending and receiving {len(data)} B")
         # Make the last send time 60 seconds *before* the current time (to fix variations in time)
         self._last_send_time = time.time() - 60.0
-        await self.send(data)
-        header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
+        # Inject a random sequence number into the header
+        import random
+        random_sequence = random.randint(0, 255)
+        
+        # Parse the existing header
+        header = smphdr.Header.loads(data[:smphdr.Header.SIZE])
+
         self._expected_response_sequence = header.sequence
+        
+        # Create a new header with the random sequence
+        new_header = smphdr.Header(
+            op=header.op,
+            version=header.version,
+            flags=header.flags,
+            length=header.length,
+            group_id=header.group_id,
+            sequence=random_sequence,
+            command_id=header.command_id
+        )
+
+        cfc_logger.debug(f"Injecting new header {new_header}")
+        
+        # Replace the header in the data
+        modified_data = new_header.BYTES + data[smphdr.Header.SIZE:]
+        
+        # Update expected response random sequence
+        self._expected_response_random_sequence = random_sequence
+        
+        await self.send(modified_data)
+
         try:
-            return await self.receive()
+            data = await self.receive()
+            cfc_logger.debug(f"Received {len(data)} B")
+            received_header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
+            modified_received_header = smphdr.Header(
+                op=received_header.op,
+                version=received_header.version,
+                flags=received_header.flags,
+                length=received_header.length,
+                group_id=received_header.group_id,
+                sequence=self._expected_response_sequence,
+                command_id=received_header.command_id
+            )
+            cfc_logger.debug(f"Modified received header {modified_received_header}")
+            return modified_received_header.BYTES + data[smphdr.Header.SIZE:]
         except SMPChirpstackFuotaTransportException as e:
             cfc_logger.error(f"Failed to receive data: {str(e)}")
             cfc_logger.debug("Sending ImageUploadWriteResponse with the same offset as the request")
