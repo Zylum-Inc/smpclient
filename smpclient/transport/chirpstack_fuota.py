@@ -554,10 +554,10 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         """Add uplinks to the pending list for a device."""
         if dev_eui not in self._pending_uplinks:
             self._pending_uplinks[dev_eui] = []
-        
+
         # Get existing fCnt values to avoid duplicates
         existing_fcnts = {uplink['data']['fCnt'] for uplink in self._pending_uplinks[dev_eui]}
-        
+
         # Filter out uplinks with duplicate fCnt values
         unique_uplinks = []
         for uplink in uplinks:
@@ -567,10 +567,12 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 existing_fcnts.add(fcnt)
             else:
                 cfc_logger.debug(f"Skipping duplicate uplink with fCnt {fcnt} for {dev_eui}")
-        
+
         self._pending_uplinks[dev_eui].extend(unique_uplinks)
-        cfc_logger.debug(f"Added {len(unique_uplinks)} unique uplinks to pending list for {dev_eui}")
-        
+        cfc_logger.debug(
+            f"Added {len(unique_uplinks)} unique uplinks to pending list for {dev_eui}"
+        )
+
     def _clear_pending_uplinks(self, dev_eui: str) -> None:
         """Clear pending uplinks for a device (when message is successfully assembled)."""
         if dev_eui in self._pending_uplinks:
@@ -624,7 +626,10 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             # If we don't have a valid header yet, try to get one from this uplink
             if header is None:
-                if not self._validate_smp_header(uplink_payload_bytes):
+                cfc_logger.debug(f"Validating SMP header")
+                try:
+                    header = smphdr.Header.loads(uplink_payload_bytes[: smphdr.Header.SIZE])
+                except Exception:
                     cfc_logger.debug(f"Received non-SMP data: {uplink_payload_bytes!r}")
                     header = None
                     payload_bytes = b""
@@ -639,6 +644,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     continue
 
                 message_length = header.length + header.SIZE
+                payload_bytes = uplink_payload_bytes
                 cfc_logger.debug(
                     f"Waiting for the rest of the {message_length} byte response, "
                     f"received {len(payload_bytes)} bytes"
@@ -659,6 +665,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     f"Received too much data: {payload_bytes!r}"
                 )
 
+        cfc_logger.debug(
+            f"Unable to assemble a complete message, remaining uplinks Count: {len(remaining_uplinks)}"
+        )
         # If we get here, we couldn't assemble a complete message
         # Return all uplinks as remaining for next iteration
         return None, remaining_uplinks
@@ -702,16 +711,24 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             # Get pending uplinks from previous iterations
             pending_uplinks = self._get_pending_uplinks(dev_eui)
 
+            cfc_logger.debug(f"Pending uplinks Count: {len(pending_uplinks)}")
+
             # Get and sort new uplinks
             sorted_uplinks = self._get_sorted_uplinks(dev_id, fport, current_after_epoch)
+
+            cfc_logger.debug(f"Sorted uplinks Count: {len(sorted_uplinks)}")
 
             # Filter out already processed uplinks and get latest timestamp
             filtered_uplinks, latest_timestamp_epoch = self._filter_unprocessed_uplinks(
                 sorted_uplinks
             )
 
+            cfc_logger.debug(f"Filtered uplinks Count: {len(filtered_uplinks)}")
+
             # Combine pending and new uplinks
             all_uplinks = pending_uplinks + filtered_uplinks
+
+            cfc_logger.debug(f"All uplinks Count: {len(all_uplinks)}")
 
             if not all_uplinks:
                 cfc_logger.debug("No messages received yet")
@@ -1000,6 +1017,14 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         else:
             # Send the data as unicast downlinks to each of the matched devices
             for device in self._matched_devices:
+                cfc_logger.debug(
+                    f"Sending a zero length message to device {device['dev_eui']} at port 2 to clear any pending uplinks"
+                )
+                await self.send_unicast(device["dev_eui"], b"", 2)
+                cfc_logger.debug(
+                    f"Waiting 1 second to clear pending uplinks for device {device['dev_eui']}"
+                )
+                await asyncio.sleep(1)
                 cfc_logger.debug(f"Sending to device {device['dev_eui']}")
                 await self.send_unicast(device["dev_eui"], data, 2)
 
