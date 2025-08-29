@@ -630,8 +630,6 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                     payload_bytes = b""
                     continue
 
-                header = smphdr.Header.loads(uplink_payload_bytes[: smphdr.Header.SIZE])
-                payload_bytes = uplink_payload_bytes
                 cfc_logger.debug(f"Received {header=}")
 
                 if not self._is_valid_response_header(header):
