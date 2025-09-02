@@ -558,12 +558,28 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         # Get existing fCnt values to avoid duplicates
         existing_fcnts = {uplink['data']['fCnt'] for uplink in self._pending_uplinks[dev_eui]}
 
+        cfc_logger.debug(f"Existing fCnts: {existing_fcnts}")
+
+        # Get existing data to avoid duplicates
+        existing_payload_bytes = {
+            base64.b64decode(pending_uplink['data']['data']) for pending_uplink in self._pending_uplinks[dev_eui]
+        }
+
+        cfc_logger.debug(f"Existing payload bytes: {existing_payload_bytes}")
+
         # Filter out uplinks with duplicate fCnt values
+        # Also filter out any uplinks whos data matches the pending uplinks
         unique_uplinks = []
         for uplink in uplinks:
             fcnt = uplink['data']['fCnt']
             if fcnt not in existing_fcnts:
-                unique_uplinks.append(uplink)
+                if base64.b64decode(uplink['data']['data']) not in existing_payload_bytes:  # noqa: E501
+                    unique_uplinks.append(uplink)
+                    existing_payload_bytes.add(base64.b64decode(uplink['data']['data']))
+                else:
+                    cfc_logger.debug(
+                        f"Skipping duplicate uplink with fCnt {fcnt} for {dev_eui} because its payload matches a pending uplink"
+                    )  # noqa: E501
                 existing_fcnts.add(fcnt)
             else:
                 cfc_logger.debug(f"Skipping duplicate uplink with fCnt {fcnt} for {dev_eui}")
@@ -655,6 +671,9 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             else:
                 cfc_logger.debug(f"Received more payload: {uplink_payload_bytes!r}")
                 payload_bytes += uplink_payload_bytes
+                # only add the uplink if it hasn't already been received
+                if uplink not in remaining_uplinks:
+                    remaining_uplinks.append(uplink)
 
             # Check if we have received the full message
             if len(payload_bytes) == message_length:
