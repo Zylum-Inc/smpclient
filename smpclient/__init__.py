@@ -106,7 +106,7 @@ class SMPClient:
         await self._transport.disconnect()
 
     async def request(
-        self, request: SMPRequest[TRep, TEr1, TEr2], timeout_s: float = 600.000
+        self, request: SMPRequest[TRep, TEr1, TEr2], timeout_s: float = 1800.000
     ) -> TRep | TEr1 | TEr2:
         """Make an `SMPRequest` to the SMP server and return the Response or Error.
 
