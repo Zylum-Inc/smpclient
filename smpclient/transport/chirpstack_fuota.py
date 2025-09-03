@@ -1112,16 +1112,61 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             )
             cfc_logger.debug(f"Modified received header {modified_received_header}")
             return modified_received_header.BYTES + data[smphdr.Header.SIZE :]
+
         except SMPChirpstackFuotaTransportException as e:
+
             cfc_logger.error(f"Failed to receive data: {str(e)}")
-            cfc_logger.debug("Sending ImageUploadWriteResponse with the same offset as the request")
-            cfc_logger.debug(f"{self._expected_response_sequence=}")
-            cfc_logger.debug(f"{self._off=}")
-            # Create the response
-            response = smpimg.ImageUploadWriteResponse(
-                sequence=self._expected_response_sequence, off=self._off
-            )
-            return response.BYTES
+
+            if (
+                self._expected_response_group_id == smphdr.GroupId.IMAGE_MANAGEMENT 
+                and self._expected_response_command_id == CommandId.ImageManagement.UPLOAD
+            ):
+                cfc_logger.debug("Sending ImageUploadWriteResponse with the same offset as the request")
+                cfc_logger.debug(f"{self._expected_response_sequence=}")
+                cfc_logger.debug(f"{self._off=}")
+                # Create the response
+                response = smpimg.ImageUploadWriteResponse(
+                    sequence=self._expected_response_sequence, off=self._off
+                )
+                return response.BYTES
+
+            elif ( 
+                self._expected_response_group_id == smphdr.GroupId.OS_MANAGEMENT 
+                and self._expected_response_command_id == CommandId.OSManagement.RESET
+            ):
+                # Create the response
+                response = smpos.ResetWriteResponse(
+                    sequence=self._expected_response_sequence,
+                    status=smpos.ResetWriteResponseStatus.SUCCESS
+                )
+                return response.BYTES
+
+            elif (
+                self._expected_response_group_id == smphdr.GroupId.IMAGE_MANAGEMENT
+                and self._expected_response_command_id == CommandId.ImageManagement.STATES_READ
+            ):
+                # Create a response based on the expected response group and command id
+                response = smpimg.ImageStatesReadResponse(
+                    sequence=self._expected_response_sequence,
+                    group_id=self._expected_response_group_id,
+                    command_id=self._expected_response_command_id,
+                    status=smpmsg.ResponseStatus.SUCCESS
+                )
+                return response.BYTES
+            
+            elif (
+                self._expected_response_group_id == smphdr.GroupId.IMAGE_MANAGEMENT
+                and self._expected_response_command_id == CommandId.ImageManagement.STATES_WRITE
+            ):
+                # Create the response
+                response = smpimg.ImageStatesWriteResponse(
+                    sequence=self._expected_response_sequence,
+                    status=smpmsg.ResponseStatus.SUCCESS
+                )
+                return response.BYTES
+            
+            else:
+                raise e
 
     @property
     def max_unencoded_size(self) -> int:
