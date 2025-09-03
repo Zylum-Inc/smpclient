@@ -1023,6 +1023,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._expected_response_op = req_header.op
         self._expected_response_group_id = req_header.group_id
         self._expected_response_command_id = req_header.command_id
+        self._receive_timeout = 1800
 
         if (
             req_header.group_id == smphdr.GroupId.IMAGE_MANAGEMENT
@@ -1035,6 +1036,13 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             # Send the data as a multicast downlink
             await self.send_multicast(data)
         else:
+            if (
+                req_header.group_id == smphdr.GroupId.OS_MANAGEMENT
+                and req_header.command_id == CommandId.OSManagement.RESET
+            ):
+                # Special handling for ResetWrite because there is no response to it
+                self._receive_timeout = 60
+
             # Send the data as unicast downlinks to each of the matched devices
             for device in self._matched_devices:
                 cfc_logger.debug(
@@ -1054,7 +1062,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         # Received unicast data from each of the matched devices - This will probably break if there are multiple devices
         for device in self._matched_devices:
             cfc_logger.debug(f"Receiving from device {device['dev_eui']}")
-            data = await self.receive_unicast(int(self._last_send_time), device["dev_eui"], 2, 1800)
+            data = await self.receive_unicast(int(self._last_send_time), device["dev_eui"], 2, self._receive_timeout)
             if data is not None:
                 cfc_logger.debug(f"Received {len(data)} B")
                 return data
