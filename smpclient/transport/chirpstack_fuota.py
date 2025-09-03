@@ -1020,6 +1020,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         cfc_logger.debug(f"Sending {len(data)} B")
         req_header = smphdr.Header.loads(data[: smphdr.Header.SIZE])
         cfc_logger.debug(f"Header {req_header=}")
+        self._expected_response_op = req_header.op
         self._expected_response_group_id = req_header.group_id
         self._expected_response_command_id = req_header.command_id
 
@@ -1137,26 +1138,31 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                 # Create the response
                 response = smpos.ResetWriteResponse(
                     sequence=self._expected_response_sequence,
-                    status=smpos.ResetWriteResponseStatus.SUCCESS
                 )
                 return response.BYTES
 
             elif (
                 self._expected_response_group_id == smphdr.GroupId.IMAGE_MANAGEMENT
-                and self._expected_response_command_id == CommandId.ImageManagement.STATES_READ
+                and self._expected_response_command_id == CommandId.ImageManagement.STATE
             ):
-                # Create a response based on the expected response group and command id
-                response = smpimg.ImageStatesReadResponse(
-                    sequence=self._expected_response_sequence,
-                    group_id=self._expected_response_group_id,
-                    command_id=self._expected_response_command_id,
-                    status=smpmsg.ResponseStatus.SUCCESS
-                )
+                if self._expected_response_op == smphdr.OP.READ:
+                    # Create a response based on the expected response group and command id
+                    response = smpimg.ImageStatesReadResponse(
+                        sequence=self._expected_response_sequence,
+                        images=[]
+                    )
+                    return response.BYTES
+                else:
+                    # Create a response based on the expected response group and command id
+                    response = smpimg.ImageStatesWriteResponse(
+                        sequence=self._expected_response_sequence,
+                        images=[],
+                    )
                 return response.BYTES
             
             elif (
                 self._expected_response_group_id == smphdr.GroupId.IMAGE_MANAGEMENT
-                and self._expected_response_command_id == CommandId.ImageManagement.STATES_WRITE
+                and self._expected_response_command_id == CommandId.ImageManagement.STATE
             ):
                 # Create the response
                 response = smpimg.ImageStatesWriteResponse(
