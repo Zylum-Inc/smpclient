@@ -1023,7 +1023,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._expected_response_op = req_header.op
         self._expected_response_group_id = req_header.group_id
         self._expected_response_command_id = req_header.command_id
-        self._receive_timeout = 1800
+        self._receive_timeout = 4500
 
         if (
             req_header.group_id == smphdr.GroupId.IMAGE_MANAGEMENT
