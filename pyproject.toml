@@ -1,6 +1,6 @@
 [project]
 name = "smpclient"
-version = "0.1.15"
+version = "0.1.18"
 description = "Simple Management Protocol (SMP) Client for remotely managing MCU firmware"
 authors = [
     { name = "JP Hutchins", email = "jphutchins@gmail.com" },
@@ -74,6 +74,7 @@ types-pyserial = "^3.5.0.11"
 tox = "^4.15.0"
 pydoclint = "^0.5.8"
 poetry-dynamic-versioning = "^1.7.1"
+typer = "^0.17.3"
 
 [tool.poetry.group.doc.dependencies]
 mkdocstrings = { extras = ["python"], version = "^0.26.1" }
