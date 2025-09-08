@@ -266,8 +266,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         self._off = 0
         self._image_size = 0
         self._mtu = chirpstack_fuota_configurations[self._multicast_group_type][
-            self._downlink_speed
-        ]["mtu"]
+            self._downlink_speed]["mtu"]
+        self._unicast_mtu = 53  # Hardcode, for now (to accomodate the worst case, US915 DR=8)
         # Add tracking for processed uplinks and pending assembly
         self._processed_uplink_timestamps: set[str] = set()
         self._pending_uplinks: dict[str, list] = {}  # dev_eui -> list of pending uplinks
@@ -442,7 +442,14 @@ class SMPChirpstackFuotaTransport(SMPTransport):
             device_service = DeviceService(
                 self._chirpstack_server_addr, self._chirpstack_server_api_token
             )
-            device_service.queue_downlink(dev_eui, data, fport)
+            packet_data = data
+            
+            while len(packet_data) > 0:
+                data_to_send = packet_data[:self._unicast_mtu]
+                packet_data = packet_data[self._unicast_mtu:]
+                device_service.queue_downlink(dev_eui, data_to_send, fport)
+                await asyncio.sleep(5)
+
         except Exception as e:
             cfc_logger.error(f"Failed to send unicast message to device {dev_eui}: {str(e)}")
             raise SMPChirpstackFuotaTransportException(
