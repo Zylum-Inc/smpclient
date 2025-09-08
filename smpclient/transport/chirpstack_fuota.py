@@ -927,7 +927,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         downlink_stats = ChirpstackFuotaDownlinkStats()
         cfc_logger.info(f"Sending {len(data)} B")
         cfc_logger.debug(f"Mtu: {self._mtu}")
-        self._send_max_duration_s = max(500.0, 500.0 * (len(data) / self._mtu))
+        self._send_max_duration_s = max(2000.0, 500.0 * (len(data) / self._mtu))
         cfc_logger.info(f"send_max_duration_s: {self._send_max_duration_s}")
         deployment_config = FuotaUtils.create_deployment_config(
             multicast_timeout=chirpstack_fuota_configurations[self._multicast_group_type][
@@ -984,6 +984,8 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             cfc_logger.debug(f"Getting deployment status")
 
+            current_timeout_s = self._timeout_s
+
             try:
                 while not deployment_completed:
                     # Get deployment status
@@ -999,7 +1001,15 @@ class SMPChirpstackFuotaTransport(SMPTransport):
                                 f"Deployment timeout exceeded"
                             )
 
-                    await asyncio.sleep(self._timeout_s)
+                    cfc_logger.debug(f"Sleeping for {current_timeout_s} seconds")
+                    
+                    await asyncio.sleep(current_timeout_s)
+
+                    current_timeout_s = current_timeout_s * 2
+
+                    if current_timeout_s > 120:
+                        current_timeout_s = 120
+
             except Exception as e:
                 # Don't raise an exception (for now). Let the higher layers fail
                 # This is because the FUOTA server can sometimes be wrong
