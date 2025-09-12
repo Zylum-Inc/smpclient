@@ -1,0 +1,1101 @@
+{
+    "cloud_lns_response_json_array": [
+        {
+            "total": 62,
+            "offset": 15,
+            "limit": 2,
+            "events": [
+              {
+                "id": "07b36e74-5c88-4616-b26a-db17f6ea3622",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "AQAAkAABQgC/Zmk=",
+                  "fCnt": 7,
+                  "time": "2025-09-11T21:41:23.828+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 11.5,
+                      "rssi": -26,
+                      "board": 263,
+                      "nsTime": "2025-09-11T21:41:23.849913292+00:00",
+                      "channel": 7,
+                      "context": "aJ4GBA==",
+                      "location": {
+                        "altitude": 366,
+                        "latitude": 33.93485641479492,
+                        "longitude": -84.35250854492188
+                      },
+                      "uplinkId": 20947,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662101.828s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 905300000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "2b75dbd4-6ff1-419c-9f5a-1bcde3d3ddac"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:41:24.083264",
+                "created_at": "2025-09-11T21:41:24.083264",
+                "updated_at": "2025-09-11T21:41:24.083264"
+              },
+              {
+                "id": "8ca03ff9-cbcd-4a66-8100-84e0a7a1061e",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "AQAABgAAbAa/YnI=",
+                  "fCnt": 6,
+                  "time": "2025-09-11T21:39:22.555+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": -14.8,
+                      "rssi": -88,
+                      "board": 3,
+                      "nsTime": "2025-09-11T21:39:22.570670907+00:00",
+                      "channel": 3,
+                      "context": "YWOKBA==",
+                      "location": {
+                        "altitude": 366,
+                        "latitude": 33.934844970703125,
+                        "longitude": -84.3525161743164
+                      },
+                      "uplinkId": 19155,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441661980.555s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904500000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "30413732-67bf-4d04-aaee-55fdf2c41937"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:39:23.197086",
+                "created_at": "2025-09-11T21:39:23.197086",
+                "updated_at": "2025-09-11T21:39:23.197086"
+              }
+            ]
+          },
+          {
+            "total": 62,
+            "offset": 10,
+            "limit": 5,
+            "events": [
+              {
+                "id": "5c059013-c62b-414f-9980-6dcaec40a231",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "NDQ0M2RoYXNoWCA=",
+                  "fCnt": 12,
+                  "time": "2025-09-11T21:44:45.331+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 12.8,
+                      "rssi": -28,
+                      "board": 263,
+                      "nsTime": "2025-09-11T21:44:45.352047552+00:00",
+                      "channel": 7,
+                      "context": "dKC2NA==",
+                      "location": {
+                        "altitude": 365,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.3525161743164
+                      },
+                      "uplinkId": 23763,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662303.331s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 905300000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "e5af523a-edb5-4558-b0eb-8aaf0e57b3ce"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:44:45.579416",
+                "created_at": "2025-09-11T21:44:45.579416",
+                "updated_at": "2025-09-11T21:44:45.579416"
+              },
+              {
+                "id": "9757b373-5357-4de7-8216-f872c250b9b5",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "Mi4wLjExLjMzNTU=",
+                  "fCnt": 11,
+                  "time": "2025-09-11T21:44:25.096+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 10,
+                      "rssi": -24,
+                      "board": 262,
+                      "nsTime": "2025-09-11T21:44:25.113039870+00:00",
+                      "channel": 6,
+                      "context": "c2vx7A==",
+                      "location": {
+                        "altitude": 365,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.3525161743164
+                      },
+                      "uplinkId": 23507,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662283.096s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 905100000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "7218d649-d9ed-4f33-87dd-82c4647eb82f"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:44:25.345989",
+                "created_at": "2025-09-11T21:44:25.345989",
+                "updated_at": "2025-09-11T21:44:25.345989"
+              },
+              {
+                "id": "63338020-4602-4a2e-8d9c-4db75422418b",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "dABndmVyc2lvbm8=",
+                  "fCnt": 10,
+                  "time": "2025-09-11T21:44:03.198+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 8,
+                      "rssi": -24,
+                      "board": 3,
+                      "nsTime": "2025-09-11T21:44:03.217650713+00:00",
+                      "channel": 3,
+                      "context": "ch3RDA==",
+                      "location": {
+                        "altitude": 364,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.35250854492188
+                      },
+                      "uplinkId": 22995,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662261.198s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904500000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "c4af31d2-573e-4c38-b049-1a59e66fa924"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:44:03.454483",
+                "created_at": "2025-09-11T21:44:03.454483",
+                "updated_at": "2025-09-11T21:44:03.454483"
+              },
+              {
+                "id": "76bb84d9-7cf3-487e-9b4f-1528a15e8a21",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "dABndmVyc2lvbm8=",
+                  "fCnt": 9,
+                  "time": "2025-09-11T21:42:00.461+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 8.2,
+                      "rssi": -16,
+                      "board": 3,
+                      "nsTime": "2025-09-11T21:42:00.477332093+00:00",
+                      "channel": 3,
+                      "context": "asz+1A==",
+                      "location": {
+                        "altitude": 365,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.3525161743164
+                      },
+                      "uplinkId": 21715,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662138.461s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904500000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "a4cc11f1-ee1f-4c24-96a7-15ba18aa6762"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:42:00.717326",
+                "created_at": "2025-09-11T21:42:00.717326",
+                "updated_at": "2025-09-11T21:42:00.717326"
+              },
+              {
+                "id": "6d0493a4-bd66-4392-a4b8-f86cb7066e00",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "bWFnZXOfv2RzbG8=",
+                  "fCnt": 8,
+                  "time": "2025-09-11T21:41:40.225+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 9.5,
+                      "rssi": -30,
+                      "board": 260,
+                      "nsTime": "2025-09-11T21:41:40.238186158+00:00",
+                      "channel": 4,
+                      "context": "aZg2vA==",
+                      "location": {
+                        "altitude": 366,
+                        "latitude": 33.93485641479492,
+                        "longitude": -84.35250854492188
+                      },
+                      "uplinkId": 21203,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662118.225s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904700000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "bac5e295-7620-4588-ae67-bbc13584c232"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:41:40.475462",
+                "created_at": "2025-09-11T21:41:40.475462",
+                "updated_at": "2025-09-11T21:41:40.475462"
+              }
+            ]
+          },
+          {
+            "total": 62,
+            "offset": 5,
+            "limit": 5,
+            "events": [
+              {
+                "id": "2a058d6c-8581-40f1-b4c8-6636820f2139",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "ZW5kaW5n9Gljb24=",
+                  "fCnt": 17,
+                  "time": "2025-09-11T21:46:26.453+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 10,
+                      "rssi": -18,
+                      "nsTime": "2025-09-11T21:46:26.467949122+00:00",
+                      "context": "eqe19A==",
+                      "location": {
+                        "altitude": 367,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.35252380371094
+                      },
+                      "uplinkId": 26067,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662404.453s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 903900000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "96c43e97-3b18-49d8-838f-1aad99004d14"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:46:26.874830",
+                "created_at": "2025-09-11T21:46:26.874830",
+                "updated_at": "2025-09-11T21:46:26.874830"
+              },
+              {
+                "id": "82d38f86-9bf5-4f20-96b9-6fead237b7ec",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "Ym9vdGFibGX1Z3A=",
+                  "fCnt": 16,
+                  "time": "2025-09-11T21:46:00.717+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 8.8,
+                      "rssi": -28,
+                      "board": 261,
+                      "nsTime": "2025-09-11T21:46:00.737384211+00:00",
+                      "channel": 5,
+                      "context": "eR8BhA==",
+                      "location": {
+                        "altitude": 365,
+                        "latitude": 33.934844970703125,
+                        "longitude": -84.35252380371094
+                      },
+                      "uplinkId": 25555,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662378.717s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904900000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "bac6d956-a058-4a75-8b16-eb1013589d01"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:46:00.973761",
+                "created_at": "2025-09-11T21:46:00.973761",
+                "updated_at": "2025-09-11T21:46:00.973761"
+              },
+              {
+                "id": "ecff319d-d084-4c6f-9472-26d3943cfa20",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "I5942Z5Vi4vF0Wg=",
+                  "fCnt": 15,
+                  "time": "2025-09-11T21:45:44.320+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 9.8,
+                      "rssi": -17,
+                      "board": 260,
+                      "nsTime": "2025-09-11T21:45:44.336207821+00:00",
+                      "channel": 4,
+                      "context": "eCTQ1A==",
+                      "location": {
+                        "altitude": 365,
+                        "latitude": 33.934844970703125,
+                        "longitude": -84.35252380371094
+                      },
+                      "uplinkId": 25043,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662362.320s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904700000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "1707e372-01f6-4a7c-b796-bc9374c82b32"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:45:44.572511",
+                "created_at": "2025-09-11T21:45:44.572511",
+                "updated_at": "2025-09-11T21:45:44.572511"
+              },
+              {
+                "id": "f0556ad0-616e-43c3-80e8-75fa21c5675f",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "OuaOul61JsRePAA=",
+                  "fCnt": 14,
+                  "time": "2025-09-11T21:45:22.424+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 7.5,
+                      "rssi": -17,
+                      "board": 2,
+                      "nsTime": "2025-09-11T21:45:22.444541370+00:00",
+                      "channel": 2,
+                      "context": "dtazvA==",
+                      "location": {
+                        "altitude": 365,
+                        "latitude": 33.934844970703125,
+                        "longitude": -84.35252380371094
+                      },
+                      "uplinkId": 24787,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662340.424s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904300000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "7916a49d-da14-41b2-9113-2e326d9e83ec"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:45:22.681262",
+                "created_at": "2025-09-11T21:45:22.681262",
+                "updated_at": "2025-09-11T21:45:22.681262"
+              },
+              {
+                "id": "e2734cf1-ec71-43d0-a11f-e471517d506d",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "ciYdsrOK0WrMxdM=",
+                  "fCnt": 13,
+                  "time": "2025-09-11T21:45:01.727+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 9,
+                      "rssi": -24,
+                      "board": 1,
+                      "nsTime": "2025-09-11T21:45:01.738559889+00:00",
+                      "channel": 1,
+                      "context": "dZrjrA==",
+                      "location": {
+                        "altitude": 365,
+                        "latitude": 33.93484878540039,
+                        "longitude": -84.3525161743164
+                      },
+                      "uplinkId": 24275,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662319.727s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904100000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "f9d96822-da5a-4833-a6df-c71bf62aafbc"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:45:01.981283",
+                "created_at": "2025-09-11T21:45:01.981283",
+                "updated_at": "2025-09-11T21:45:01.981283"
+              }
+            ]
+          },
+          {
+            "total": 62,
+            "offset": 0,
+            "limit": 5,
+            "events": [
+              {
+                "id": "252580d7-21f7-4184-865a-3c43497e53cb",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "dFN0YXR1cwD/",
+                  "fCnt": 22,
+                  "time": "2025-09-11T21:49:44.816+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 12,
+                      "rssi": -27,
+                      "board": 263,
+                      "nsTime": "2025-09-11T21:49:44.836397530+00:00",
+                      "channel": 7,
+                      "context": "hnp9TA==",
+                      "location": {
+                        "altitude": 366,
+                        "latitude": 33.93485641479492,
+                        "longitude": -84.35250854492188
+                      },
+                      "uplinkId": 29139,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662602.816s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 905300000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "92729085-fcb7-4db6-ba5d-2c3756b85338"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:49:45.070770",
+                "created_at": "2025-09-11T21:49:45.070770",
+                "updated_at": "2025-09-11T21:49:45.070770"
+              },
+              {
+                "id": "79981d43-fd36-4d83-8954-12a74ae781c2",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "ZW509P//a3NwbGk=",
+                  "fCnt": 21,
+                  "time": "2025-09-11T21:49:24.739+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 8,
+                      "rssi": -16,
+                      "board": 3,
+                      "nsTime": "2025-09-11T21:49:24.750770077+00:00",
+                      "channel": 3,
+                      "context": "hUgjpA==",
+                      "location": {
+                        "altitude": 366,
+                        "latitude": 33.93485641479492,
+                        "longitude": -84.35250854492188
+                      },
+                      "uplinkId": 28883,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662582.739s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904500000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "436b20a0-c19e-4e05-99a5-a2542043d1c3"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:49:24.986249",
+                "created_at": "2025-09-11T21:49:24.986249",
+                "updated_at": "2025-09-11T21:49:24.986249"
+              },
+              {
+                "id": "04c0b89d-aa4b-4bda-9b37-2b902b3f2249",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "ZW509P//a3NwbGk=",
+                  "fCnt": 20,
+                  "time": "2025-09-11T21:47:24.982+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 7.2,
+                      "rssi": -18,
+                      "board": 2,
+                      "nsTime": "2025-09-11T21:47:25.003674560+00:00",
+                      "channel": 2,
+                      "context": "fiTL3A==",
+                      "location": {
+                        "altitude": 366,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.3525161743164
+                      },
+                      "uplinkId": 27347,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662462.982s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904300000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "740cdbdc-07bb-4e62-8973-255349c623e4"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:47:25.233952",
+                "created_at": "2025-09-11T21:47:25.233952",
+                "updated_at": "2025-09-11T21:47:25.233952"
+              },
+              {
+                "id": "8c6d535b-c945-42af-8442-d31317dbba7b",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "aXZl9WlwZXJtYW4=",
+                  "fCnt": 19,
+                  "time": "2025-09-11T21:47:03.086+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 9.5,
+                      "rssi": -16,
+                      "board": 261,
+                      "nsTime": "2025-09-11T21:47:03.107364626+00:00",
+                      "channel": 5,
+                      "context": "fNauzA==",
+                      "location": {
+                        "altitude": 366,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.3525161743164
+                      },
+                      "uplinkId": 26835,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662441.086s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904900000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "fdd02161-1e2c-4b4a-b046-e097501e35e6"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:47:03.341991",
+                "created_at": "2025-09-11T21:47:03.341991",
+                "updated_at": "2025-09-11T21:47:03.341991"
+              },
+              {
+                "id": "4b4e88a9-4233-44a6-93da-e0091f235243",
+                "device_id": "6c2038f9-df72-45e4-a81f-e66e94f9ee0e",
+                "lns_id": "89575db0-0f3e-435b-8e1c-251d60590289",
+                "type": "uplink",
+                "data": {
+                  "dr": 0,
+                  "adr": true,
+                  "data": "ZmlybWVk9WZhY3Q=",
+                  "fCnt": 18,
+                  "time": "2025-09-11T21:46:42.850+00:00",
+                  "fPort": 2,
+                  "rxInfo": [
+                    {
+                      "snr": 10.8,
+                      "rssi": -28,
+                      "board": 1,
+                      "nsTime": "2025-09-11T21:46:42.869164034+00:00",
+                      "channel": 1,
+                      "context": "e6HmtA==",
+                      "location": {
+                        "altitude": 367,
+                        "latitude": 33.934852600097656,
+                        "longitude": -84.35252380371094
+                      },
+                      "uplinkId": 26323,
+                      "crcStatus": "CRC_OK",
+                      "gatewayId": "7076ff0055080a16",
+                      "timeSinceGpsEpoch": "1441662420.850s"
+                    }
+                  ],
+                  "txInfo": {
+                    "frequency": 904100000,
+                    "modulation": {
+                      "lora": {
+                        "codeRate": "CR_4_5",
+                        "bandwidth": 125000,
+                        "spreadingFactor": 10
+                      }
+                    }
+                  },
+                  "devAddr": "014b7e68",
+                  "confirmed": true,
+                  "deviceInfo": {
+                    "tags": {},
+                    "devEui": "c60202afe056c515",
+                    "tenantId": "046c9464-0cb5-4118-96fc-0735d4fe0462",
+                    "deviceName": "tas-cli 31119E23",
+                    "tenantName": "TAS Integration",
+                    "applicationId": "d8b18cd8-719e-4cc0-91f6-8d671445fe28",
+                    "applicationName": "TAS Integration Application",
+                    "deviceProfileId": "e7293f93-ea4f-4e0c-8414-94b6bd637776",
+                    "deviceProfileName": "US915_Class_B_DR0",
+                    "deviceClassEnabled": "CLASS_B"
+                  },
+                  "regionConfigId": "us915_1",
+                  "deduplicationId": "9e190d53-3eea-46e5-8691-3b5ea49fe61d"
+                },
+                "metadata": {},
+                "captured_at": "2025-09-11T21:46:43.099556",
+                "created_at": "2025-09-11T21:46:43.099556",
+                "updated_at": "2025-09-11T21:46:43.099556"
+              }
+            ]
+          }
+    ]
+}

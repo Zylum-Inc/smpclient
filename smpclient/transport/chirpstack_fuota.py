@@ -642,10 +642,18 @@ class SMPChirpstackFuotaTransport(SMPTransport):
         message_length = 0
         remaining_uplinks: list = []
 
+        last_uplink_payload_bytes = b""
+
         # Process all uplinks uniformly
         for uplink in sorted_uplinks:
             cfc_logger.debug(f"Processing uplink with fCnt: {uplink['data']['fCnt']}")
             uplink_payload_bytes = base64.b64decode(uplink["data"]["data"])
+
+            if uplink_payload_bytes == last_uplink_payload_bytes:
+                cfc_logger.debug(f"Skipping duplicate uplink with payload: {uplink_payload_bytes!r}")
+                continue
+
+            last_uplink_payload_bytes = uplink_payload_bytes
 
             # If we don't have a valid header yet, try to get one from this uplink
             if header is None:
@@ -677,10 +685,10 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             else:
                 cfc_logger.debug(f"Received more payload: {uplink_payload_bytes!r}")
-                payload_bytes += uplink_payload_bytes
                 # only add the uplink if it hasn't already been received
                 if uplink not in remaining_uplinks:
                     remaining_uplinks.append(uplink)
+                    payload_bytes += uplink_payload_bytes
 
             # Check if we have received the full message
             if len(payload_bytes) == message_length:
