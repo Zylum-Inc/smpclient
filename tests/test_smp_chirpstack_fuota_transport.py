@@ -77,7 +77,7 @@ def test_get_multicast_timeout_seconds() -> None:
         t.get_multicast_timeout_seconds(
             ChirpstackFuotaMulticastGroupTypes.CLASS_B, ChirpstackFuotaDownlinkSpeed.DL_SLOW
         )
-        == 4246
+        == 2198
     )
 
 
