@@ -503,7 +503,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
     def _should_send_nudge(self, no_uplink_count: int) -> bool:
         """Determine if we should send a nudge to trigger a response."""
-        return no_uplink_count >= 4
+        return no_uplink_count >= 10
 
     async def _send_nudge(self, dev_eui: str) -> None:
         """Send a random unicast message to nudge the device for a response."""
