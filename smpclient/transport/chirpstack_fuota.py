@@ -766,7 +766,7 @@ class SMPChirpstackFuotaTransport(SMPTransport):
 
             if not all_uplinks:
                 cfc_logger.debug("No messages received yet")
-                await asyncio.sleep(5)
+                await asyncio.sleep(40)
                 continue
 
             cfc_logger.debug(
