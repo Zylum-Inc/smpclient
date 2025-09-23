@@ -171,13 +171,13 @@ chirpstack_fuota_configurations = {
             "multicast_ping_slot_period": 3,
         },
         ChirpstackFuotaDownlinkSpeed.DL_SLOW: {
-            "mtu": 1024,
+            "mtu": 1536,
             "multicast_dr": 9,
             "multicast_timeout": 3,
             "unicast_timeout": 90,
             "fragmentation_fragment_size": 64,
             "fragmentation_redundancy": 5,
-            "multicast_ping_slot_period": 1,
+            "multicast_ping_slot_period": 2,
         },
     },
 }
