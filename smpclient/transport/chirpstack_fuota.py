@@ -154,12 +154,12 @@ chirpstack_fuota_configurations = {
     ChirpstackFuotaMulticastGroupTypes.CLASS_B: {
         ChirpstackFuotaDownlinkSpeed.DL_FAST: {
             "mtu": 3072,
-            "multicast_dr": 10,
+            "multicast_dr": 11,
             "multicast_timeout": 3,
             "unicast_timeout": 90,
-            "fragmentation_fragment_size": 64,
+            "fragmentation_fragment_size": 96,
             "fragmentation_redundancy": 10,
-            "multicast_ping_slot_period": 4,
+            "multicast_ping_slot_period": 3,
         },
         ChirpstackFuotaDownlinkSpeed.DL_MEDIUM: {
             "mtu": 2048,
